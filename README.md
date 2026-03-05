@@ -38,7 +38,7 @@ finsite/
 
 ## running it locally
 
-just open `index.html` in your browser. the API key is already embedded so you don't need to enter anything — just upload a statement and hit analyze.
+just open `index.html` in your browser. the API key is already embedded and paid for so you don't need to enter anything — just upload a statement and hit analyze.
 
 if you're running it on a server with PHP, the proxy in `php/analyze.php` will handle everything server-side automatically.
 
@@ -59,7 +59,7 @@ go to [console.anthropic.com](https://console.anthropic.com), make an account, g
 
 ## stack
 
-vanilla HTML, CSS, and JS on the front end. PHP for the proxy. Claude Sonnet for the AI. no frameworks, no build step.
+vanilla HTML, CSS, and JS on the front end. PHP for the proxy. Claude Sonnet for the AI. no frameworks.
 
 ---
 
