@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>FinSite — AI Financial Analyzer</title>
+  <meta name="description" content="Upload your bank statement and get AI-powered insights on your spending, savings, and investment opportunities." />
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@300;400;500&display=swap" rel="stylesheet" />
+
+  <!-- Styles -->
+  <link rel="stylesheet" href="css/main.css" />
+  <link rel="stylesheet" href="css/components.css" />
+  <link rel="stylesheet" href="css/dashboard.css" />
+
+  <style>
+    /* Page-specific overrides */
+    body { overflow-x: hidden; }
+
+    .upload-page-bg {
+      position: fixed; inset: 0; z-index: 0; pointer-events: none;
+      overflow: hidden;
+    }
+
+    .bg-circle {
+      position: absolute; border-radius: 50%; filter: blur(80px); opacity: 0.5;
+    }
+
+    .feature-pill {
+      display: inline-flex; align-items: center; gap: 7px;
+      padding: 8px 16px; border-radius: 100px;
+      background: var(--white); border: 1px solid var(--border-soft);
+      font-size: 12px; font-weight: 600; color: var(--text-secondary);
+      box-shadow: var(--shadow-xs);
+    }
+
+    .feature-pill .dot {
+      width: 7px; height: 7px; border-radius: 50%;
+      background: var(--green-500);
+    }
+
+    /* Floating bank logos row */
+    .bank-row {
+      display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+    }
+
+    .bank-chip {
+      padding: 4px 12px; border-radius: 100px;
+      background: var(--white); border: 1px solid var(--border-soft);
+      font-size: 11px; font-weight: 500; color: var(--text-muted);
+      box-shadow: var(--shadow-xs);
+    }
+
+    /* Step indicators */
+    .step-item {
+      display: flex; align-items: flex-start; gap: 12px;
+    }
+    .step-num {
+      width: 28px; height: 28px; border-radius: 50%; flex-shrink: 0;
+      background: var(--green-100); border: 1.5px solid var(--green-200);
+      color: var(--green-700); font-size: 12px; font-weight: 700;
+      display: flex; align-items: center; justify-content: center;
+    }
+  </style>
+</head>
+
+<body>
+
+  <!-- Background blobs -->
+  <div class="upload-page-bg">
+    <div class="bg-circle" style="width:500px;height:500px;top:-150px;right:-100px;background:var(--green-100);"></div>
+    <div class="bg-circle" style="width:300px;height:300px;bottom:-80px;left:-60px;background:var(--green-50);"></div>
+    <div class="bg-circle" style="width:200px;height:200px;top:40%;left:30%;background:var(--green-50);opacity:0.3;"></div>
+  </div>
+
+  <!-- Nav -->
+  <nav class="upload-nav" style="position:relative;z-index:10;">
+    <div style="display:flex;align-items:center;gap:10px;">
+      <span style="font-size:20px;font-weight:800;letter-spacing:-0.02em;">
+        <span style="color:var(--green-600);">Fin</span>Site
+      </span>
+    </div>
+    <div style="display:flex;align-items:center;gap:12px;">
+      <span class="badge badge-green badge-dot">AI Powered</span>
+      <a href="https://anthropic.com" target="_blank" class="btn btn-ghost" style="font-size:12px;padding:8px 16px;">
+        Powered by Claude
+      </a>
+    </div>
+  </nav>
+
+  <!-- Main -->
+  <main class="upload-main" style="position:relative;z-index:5;">
+    <div style="width:100%;max-width:1000px;display:grid;grid-template-columns:1fr 1fr;gap:60px;align-items:center;">
+
+      <!-- Left: Hero copy -->
+      <div class="animate-fadeUp">
+        <div class="tag" style="margin-bottom:24px;">
+          <span class="notif-dot"></span>
+          Free AI Analysis
+        </div>
+
+        <h1 class="hero-heading" style="margin-bottom:20px;">
+          Know Exactly<br/>
+          Where Your<br/>
+          <span class="accent">Money Goes.</span>
+        </h1>
+
+        <p style="font-size:16px;color:var(--text-secondary);line-height:1.75;max-width:400px;margin-bottom:32px;">
+          Upload your bank statement and get a brutally honest AI breakdown — wasteful spending, savings opportunities, and how to start investing.
+        </p>
+
+        <!-- Feature pills -->
+        <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:32px;">
+          <span class="feature-pill"><span class="dot"></span> Spending Analysis</span>
+          <span class="feature-pill"><span class="dot"></span> Savings Tips</span>
+          <span class="feature-pill"><span class="dot"></span> Investment Ideas</span>
+          <span class="feature-pill"><span class="dot"></span> Health Score</span>
+        </div>
+
+        <!-- Steps -->
+        <div style="display:flex;flex-direction:column;gap:16px;">
+          <div class="step-item">
+            <div class="step-num">1</div>
+            <div>
+              <div style="font-size:13px;font-weight:600;margin-bottom:2px;">Export your bank statement</div>
+              <div style="font-size:12px;color:var(--text-muted);">CSV, Excel, PDF, Word — any format works</div>
+            </div>
+          </div>
+          <div class="step-item">
+            <div class="step-num">2</div>
+            <div>
+              <div style="font-size:13px;font-weight:600;margin-bottom:2px;">Upload and let Claude analyze it</div>
+              <div style="font-size:12px;color:var(--text-muted);">AI reads every transaction — categorizes and spots patterns</div>
+            </div>
+          </div>
+          <div class="step-item">
+            <div class="step-num">3</div>
+            <div>
+              <div style="font-size:13px;font-weight:600;margin-bottom:2px;">Get your personalized financial report</div>
+              <div style="font-size:12px;color:var(--text-muted);">Score, insights, savings plan, and investment ideas</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right: Upload card -->
+      <div class="animate-fadeUp delay-2">
+        <div class="card card--solid panel-lg" style="box-shadow:var(--shadow-lg);">
+
+          <!-- API Key input (hidden when pre-configured) -->
+          <div id="api-key-section">
+            <div class="input-group" style="margin-bottom:20px;">
+              <label class="input-label" for="api-key">
+                Claude API Key <span style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--text-muted);">(optional if PHP proxy is set up)</span>
+              </label>
+              <input
+                class="input input-mono"
+                type="password"
+                id="api-key"
+                placeholder="sk-ant-api03-…"
+                autocomplete="off"
+              />
+              <div style="font-size:11px;color:var(--text-muted);">
+                🔒 Key stays in your browser. Never logged or stored.
+              </div>
+            </div>
+            <hr class="divider" style="margin-bottom:20px;" />
+          </div>
+
+          <!-- Upload zone -->
+          <div class="upload-zone" id="upload-zone">
+            <div class="upload-icon">📊</div>
+            <div style="font-size:17px;font-weight:700;margin-bottom:8px;">
+              Drop your bank statement here
+            </div>
+            <div style="font-size:13px;color:var(--text-muted);margin-bottom:16px;">
+              or click to browse your files
+            </div>
+            <span class="badge badge-outline">CSV · Excel · PDF · Word · Max 5MB</span>
+          </div>
+
+          <input type="file" id="file-input" accept=".csv,.txt,.pdf,.doc,.docx,.xls,.xlsx" style="display:none;" />
+
+          <!-- Error message -->
+          <div id="upload-error" style="display:none;margin-top:12px;padding:10px 14px;background:#fff5f5;border:1px solid #fecaca;border-radius:var(--r-sm);font-size:13px;color:var(--red);"></div>
+
+          <!-- Supported banks -->
+          <div style="margin-top:16px;">
+            <div style="font-size:11px;color:var(--text-muted);margin-bottom:8px;font-weight:500;">WORKS WITH ANY BANK STATEMENT</div>
+            <div class="bank-row">
+              <span class="bank-chip">Chase</span>
+              <span class="bank-chip">Bank of America</span>
+              <span class="bank-chip">Wells Fargo</span>
+              <span class="bank-chip">Citi</span>
+              <span class="bank-chip">TD Bank</span>
+              <span class="bank-chip">+ any bank</span>
+            </div>
+          </div>
+
+          <hr class="divider" style="margin:20px 0;" />
+
+          <!-- Analyze button -->
+          <button
+            class="btn btn-primary btn-lg w-full"
+            id="analyze-btn"
+            disabled
+          >
+            <span>Analyze My Finances</span>
+            <span style="font-size:18px;">→</span>
+          </button>
+
+          <div style="margin-top:14px;text-align:center;font-size:11px;color:var(--text-muted);">
+            Your data is processed privately and never stored.
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </main>
+
+  <!-- Local key config (gitignored) -->
+  <script src="js/config.local.js" onerror="void 0"></script>
+
+  <!-- File parsing libraries -->
+  <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/mammoth/mammoth.browser.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+
+  <!-- Scripts -->
+  <script src="js/api.js"></script>
+  <script src="js/upload.js"></script>
+  <script src="js/app.js"></script>
+
+</body>
+</html>
