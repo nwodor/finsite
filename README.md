@@ -46,7 +46,7 @@ if you're running it on a server with PHP, the proxy in `php/analyze.php` will h
 
 ## getting an API key
 
-go to [console.anthropic.com](https://console.anthropic.com), make an account, generate a key. costs around $0.05 per analysis so $5 will last you a while.
+go to [console.anthropic.com](https://console.anthropic.com), make an account, generate a key. costs around $0.05 per analysis so $5 will last you a while, using my API key for now during the beta phase and would later add a feature for individual users to enter the API keys for the  AI of your choice.
 
 ---
 
