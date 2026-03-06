@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>FinSite — Sign In</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+
+  <link rel="stylesheet" href="css/auth.css" />
+</head>
+<body>
+
+  <!-- Animated background blobs -->
+  <div class="bg-blobs" aria-hidden="true">
+    <div class="blob blob-1"></div>
+    <div class="blob blob-2"></div>
+    <div class="blob blob-3"></div>
+    <div class="blob blob-4"></div>
+  </div>
+
+  <!-- Auth card -->
+  <main class="auth-shell">
+    <div class="glass-card" id="auth-card">
+
+      <!-- Logo -->
+      <div class="auth-logo">
+        <span class="logo-fin">Fin</span>Site
+      </div>
+      <p class="auth-tagline">Your AI-powered financial analyst</p>
+
+      <!-- Mode tabs -->
+      <div class="auth-tabs">
+        <button class="auth-tab active" id="tab-signin" onclick="AuthApp.setMode('signin')">Sign In</button>
+        <button class="auth-tab" id="tab-signup" onclick="AuthApp.setMode('signup')">Sign Up</button>
+        <div class="auth-tab-indicator" id="tab-indicator"></div>
+      </div>
+
+      <!-- Google button -->
+      <button class="btn-google" id="google-btn" onclick="AuthApp.handleGoogleClick()">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
+          <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+          <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z" fill="#FBBC05"/>
+          <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
+        </svg>
+        <span>Continue with Google</span>
+      </button>
+
+      <!-- Divider -->
+      <div class="auth-divider">
+        <span>or continue with email</span>
+      </div>
+
+      <!-- Auth form -->
+      <form id="auth-form" onsubmit="AuthApp.handleSubmit(event)" novalidate>
+
+        <!-- Name (signup only) -->
+        <div class="form-group" id="field-name" style="display:none;">
+          <label class="form-label" for="input-name">Full name</label>
+          <div class="input-wrap">
+            <svg class="input-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+            <input
+              class="glass-input"
+              type="text"
+              id="input-name"
+              placeholder="Jane Smith"
+              autocomplete="name"
+            />
+          </div>
+        </div>
+
+        <!-- Email -->
+        <div class="form-group">
+          <label class="form-label" for="input-email">Email address</label>
+          <div class="input-wrap">
+            <svg class="input-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>
+            <input
+              class="glass-input"
+              type="email"
+              id="input-email"
+              placeholder="you@email.com"
+              autocomplete="email"
+              required
+            />
+          </div>
+        </div>
+
+        <!-- Password -->
+        <div class="form-group">
+          <div class="form-label-row">
+            <label class="form-label" for="input-password">Password</label>
+            <a class="form-link" id="forgot-link" href="#" onclick="AuthApp.handleForgot(event)">Forgot password?</a>
+          </div>
+          <div class="input-wrap">
+            <svg class="input-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+            <input
+              class="glass-input"
+              type="password"
+              id="input-password"
+              placeholder="••••••••"
+              autocomplete="current-password"
+              required
+            />
+            <button type="button" class="toggle-pw" id="toggle-pw" onclick="AuthApp.togglePassword()">
+              <svg id="eye-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg>
+            </button>
+          </div>
+        </div>
+
+        <!-- Confirm password (signup only) -->
+        <div class="form-group" id="field-confirm" style="display:none;">
+          <label class="form-label" for="input-confirm">Confirm password</label>
+          <div class="input-wrap">
+            <svg class="input-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+            <input
+              class="glass-input"
+              type="password"
+              id="input-confirm"
+              placeholder="••••••••"
+              autocomplete="new-password"
+            />
+          </div>
+        </div>
+
+        <!-- Error message -->
+        <div class="auth-error" id="auth-error" style="display:none;"></div>
+
+        <!-- Submit -->
+        <button class="btn-primary-auth" type="submit" id="submit-btn">
+          <span id="submit-label">Sign In</span>
+          <div class="btn-spinner" id="btn-spinner" style="display:none;"></div>
+        </button>
+
+      </form>
+
+      <!-- Footer switch -->
+      <p class="auth-switch">
+        <span id="switch-text">Don't have an account?</span>
+        <button class="switch-link" id="switch-btn" onclick="AuthApp.toggleMode()">Sign up</button>
+      </p>
+
+      <!-- Privacy note -->
+      <p class="auth-privacy">
+        🔒 Your data is processed privately and never stored on our servers.
+      </p>
+
+    </div>
+  </main>
+
+  <!-- Google Identity Services (loaded only when client ID is configured) -->
+  <div id="g_id_onload"
+    data-client_id=""
+    data-callback="AuthApp.handleGoogleCallback"
+    data-auto_prompt="false"
+    style="display:none;">
+  </div>
+
+  <script src="js/config.local.js" onerror="void 0"></script>
+  <script src="js/auth.js"></script>
+
+</body>
+</html>
