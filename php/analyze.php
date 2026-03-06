@@ -9,6 +9,9 @@ header('Content-Type: application/json; charset=utf-8');
 header('Access-Control-Allow-Origin: ' . ALLOWED_ORIGIN);
 header('Access-Control-Allow-Methods: POST, OPTIONS');
 header('Access-Control-Allow-Headers: Content-Type');
+header('X-Content-Type-Options: nosniff');
+header('X-Frame-Options: DENY');
+header('Referrer-Policy: strict-origin-when-cross-origin');
 
 // handle CORS preflight
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {

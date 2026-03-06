@@ -85,7 +85,7 @@
     </div>
     <div style="display:flex;align-items:center;gap:12px;">
       <span class="badge badge-green badge-dot">AI Powered</span>
-      <a href="https://anthropic.com" target="_blank" class="btn btn-ghost" style="font-size:12px;padding:8px 16px;">
+      <a href="https://anthropic.com" target="_blank" rel="noopener noreferrer" class="btn btn-ghost" style="font-size:12px;padding:8px 16px;">
         Powered by Claude
       </a>
     </div>
@@ -225,9 +225,15 @@
   <script src="js/config.local.js" onerror="void 0"></script>
 
   <!-- File parsing libraries -->
-  <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/mammoth/mammoth.browser.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"
+          integrity="sha384-vtjasyidUo0kW94K5MXDXntzOJpQgBKXmE7e2Ga4LG0skTTLeBi97eFAXsqewJjw"
+          crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/mammoth/mammoth.browser.min.js"
+          integrity="sha384-t9eMqh3OtJXZhvLtmol8r2+23t6vg1GDo1UeyP55BEQdCI67GW2u8Nso+Yzo5m9r"
+          crossorigin="anonymous"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"
+          integrity="sha384-/1qUCSGwTur9vjf/z9lmu/eCUYbpOTgSjmpbMQZ1/CtX2v/WcAIKqRv+U1DUCG6e"
+          crossorigin="anonymous"></script>
 
   <!-- Scripts -->
   <script src="js/api.js"></script>

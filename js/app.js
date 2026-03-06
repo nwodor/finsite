@@ -23,7 +23,12 @@ const FinSiteApp = (() => {
   };
 
   const pct = (n) => `${n >= 0 ? '+' : ''}${Number(n).toFixed(1)}%`;
-  const escape = (s) => String(s).replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  const escape = (s) => String(s)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#x27;');
 
   // ── Score color
   function scoreColor(s) {
@@ -288,7 +293,6 @@ const FinSiteApp = (() => {
     const score = d.score || 0;
     const r = 70;
     const circumference = 2 * Math.PI * r;
-    const offset = circumference - (score / 100) * circumference;
     const color = scoreColor(score);
 
     return `
@@ -338,13 +342,6 @@ const FinSiteApp = (() => {
           <div style="font-size:13px;color:var(--text-secondary);line-height:1.65;">${escape(d.summary || '')}</div>
         </div>
       </div>
-
-      <script>
-        setTimeout(() => {
-          const circle = document.getElementById('score-circle');
-          if (circle) circle.style.strokeDashoffset = '${offset}';
-        }, 300);
-      </script>
     `;
   }
 
