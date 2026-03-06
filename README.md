@@ -1,4 +1,4 @@
-# FinSite — AI Finance Analyzer
+# FinSite — AI Finance Advisor
 
 upload your bank statement and get a real breakdown of where your money is going. powered by claude AI, takes about 10 seconds.
 
