@@ -1,9 +1,5 @@
-/**
- * FinSite — auth.js
- * Handles sign in / sign up with Google OAuth and email/password.
- * Sessions are stored in localStorage — swap out saveSession() for a real
- * backend call when you're ready to add a proper auth system.
- */
+// i handle sign in and sign up here — Google OAuth and email/password
+// i store sessions in localStorage for now — i'll swap saveSession() for a real backend call later
 
 const AuthApp = (() => {
 
@@ -11,7 +7,7 @@ const AuthApp = (() => {
   let _pwVisible = false;
   let _googleReady = false;
 
-  // Pull client ID from config.local.js (window.FINSITE_GOOGLE_CLIENT_ID)
+  // i pull the client ID from config.local.js if i've set it
   const GOOGLE_CLIENT_ID = (typeof window !== 'undefined' && window.FINSITE_GOOGLE_CLIENT_ID) || null;
 
   // ── Floating emoji background ─────────────────────────────────────────────
@@ -22,7 +18,7 @@ const AuthApp = (() => {
     const field = document.getElementById('emoji-field');
     if (!field) return;
 
-    // spawn 18 emojis staggered across the full width
+    // i spawn 18 emojis staggered across the full width
     for (let i = 0; i < 18; i++) {
       const el = document.createElement('span');
       el.className = 'float-emoji';
@@ -31,7 +27,7 @@ const AuthApp = (() => {
       const size   = 22 + Math.random() * 22;          // 22–44px
       const left   = 3 + Math.random() * 94;           // 3–97% across
       const dur    = 12 + Math.random() * 14;          // 12–26s
-      const delay  = -(Math.random() * dur);            // stagger start so they're already mid-flight on load
+      const delay  = -(Math.random() * dur);            // i stagger the start so they're already mid-flight on load
 
       el.style.cssText = `
         font-size: ${size}px;
@@ -50,18 +46,18 @@ const AuthApp = (() => {
   function init() {
     spawnEmojis();
 
-    // If already logged in, skip to the upload page
+    // i skip to the upload page if i'm already logged in
     if (getSession()) {
       window.location.replace('./index.html');
       return;
     }
 
-    // Load Google Identity Services if client ID is configured
+    // i load Google Identity Services if i've configured a client ID
     if (GOOGLE_CLIENT_ID) {
       _loadGoogleScript();
     }
 
-    // Set the data-client_id on the hidden onload div
+    // i set the client ID on the hidden onload div
     const onload = document.getElementById('g_id_onload');
     if (onload && GOOGLE_CLIENT_ID) {
       onload.setAttribute('data-client_id', GOOGLE_CLIENT_ID);
@@ -101,7 +97,7 @@ const AuthApp = (() => {
       indicator.classList.add('right');
       pwInput.setAttribute('autocomplete', 'new-password');
 
-      // Animate name field in
+      // i retrigger the animation on the name field
       if (nameField) {
         nameField.style.animation = 'none';
         void nameField.offsetWidth;
@@ -135,7 +131,7 @@ const AuthApp = (() => {
 
     input.type = _pwVisible ? 'text' : 'password';
 
-    // swap icon: open eye / closed eye
+    // i swap between the open and closed eye icon
     icon.innerHTML = _pwVisible
       ? `<path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/>
          <path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/>
@@ -154,7 +150,7 @@ const AuthApp = (() => {
     const name     = document.getElementById('input-name')?.value.trim() || '';
     const confirm  = document.getElementById('input-confirm')?.value || '';
 
-    // Validation
+    // i validate before doing anything
     if (!_isValidEmail(email)) {
       showError('Please enter a valid email address.');
       document.getElementById('input-email')?.classList.add('error');
@@ -180,7 +176,7 @@ const AuthApp = (() => {
 
     setLoading(true);
 
-    // Simulate a brief async call — replace with real API call when ready
+    // i fake a brief async delay here — i'll replace this with a real API call later
     setTimeout(() => {
       saveSession({
         name:     _mode === 'signup' ? name : (email.split('@')[0]),
@@ -208,7 +204,7 @@ const AuthApp = (() => {
     }
     google.accounts.id.prompt((notification) => {
       if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
-        // Fallback: open popup
+        // i fall back to a popup if the prompt doesn't show
         google.accounts.oauth2.initTokenClient({
           client_id: GOOGLE_CLIENT_ID,
           scope: 'openid email profile',
@@ -218,7 +214,7 @@ const AuthApp = (() => {
     });
   }
 
-  // Called by Google Identity Services via the data-callback attribute
+  // i get called by Google Identity Services after the user signs in
   function handleGoogleCallback(response) {
     try {
       const payload = _parseJWT(response.credential);
@@ -255,7 +251,7 @@ const AuthApp = (() => {
       showError('Enter your email address above, then click "Forgot password?".');
       return;
     }
-    // Placeholder — hook up to your backend's password reset endpoint
+    // i'll hook this up to my backend's password reset endpoint later
     showError('Password reset is not yet configured. Contact the site admin.');
   }
 
@@ -273,7 +269,7 @@ const AuthApp = (() => {
       const raw = localStorage.getItem('finsite_session');
       if (!raw) return null;
       const session = JSON.parse(raw);
-      // Expire sessions after 7 days
+      // i expire sessions after 7 days
       const SEVEN_DAYS = 7 * 24 * 60 * 60 * 1000;
       if (Date.now() - (session.ts || 0) > SEVEN_DAYS) {
         localStorage.removeItem('finsite_session');
@@ -294,7 +290,7 @@ const AuthApp = (() => {
     if (!el) return;
     el.textContent = msg;
     el.style.display = 'block';
-    // reset animation
+    // i retrigger the animation
     el.style.animation = 'none';
     void el.offsetWidth;
     el.style.animation = '';
@@ -349,7 +345,7 @@ const AuthApp = (() => {
 
 })();
 
-// Make Google callback reachable from the GSI onload div
+// i expose AuthApp globally so Google's GSI callback can reach it
 window.AuthApp = AuthApp;
 
 document.addEventListener('DOMContentLoaded', () => AuthApp.init());

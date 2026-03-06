@@ -1,14 +1,11 @@
-/**
- * FINSITE — app.js
- * Main application logic: controls state, renders results dashboard
- */
+// i control all the app state here and render the results dashboard
 
 const FinSiteApp = (() => {
 
   let _data = null;
   let _activeTab = 'overview';
 
-  // ── Currency formatter
+  // i use this to format numbers as currency
   const fmt = (n) => {
     if (n === undefined || n === null) return '—';
     return new Intl.NumberFormat('en-US', {
@@ -30,7 +27,7 @@ const FinSiteApp = (() => {
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#x27;');
 
-  // ── Score color
+  // i pick a color based on the score range
   function scoreColor(s) {
     if (s >= 80) return 'var(--green-600)';
     if (s >= 60) return 'var(--green-500)';
@@ -38,56 +35,56 @@ const FinSiteApp = (() => {
     return 'var(--red)';
   }
 
-  // ── Init app (upload page)
+  // i initialize the upload page
   function init() {
     const analyzeBtn = document.getElementById('analyze-btn');
     const apiKeyInput = document.getElementById('api-key');
     const fileInput = document.getElementById('file-input');
 
-    // Auto-fill key from local config and hide the input section
+    // i auto-fill the key from my local config and hide the input section
     if (window.FINSITE_KEY && apiKeyInput) {
       apiKeyInput.value = window.FINSITE_KEY;
       const keySection = document.getElementById('api-key-section');
       if (keySection) keySection.style.display = 'none';
     }
 
-    // Enable/disable analyze button
+    // i enable or disable the analyze button depending on what's ready
     function checkReady() {
       const hasFile = !!FinSiteUpload.getCurrentFile();
       const hasKey = (apiKeyInput?.value || '').trim().length > 10;
-      // Allow proxy mode (no key) OR direct mode (with key)
+      // i allow proxy mode (no key) OR direct mode (with key)
       if (analyzeBtn) analyzeBtn.disabled = !hasFile;
     }
 
     if (apiKeyInput) apiKeyInput.addEventListener('input', checkReady);
 
-    // Init upload zone
+    // i init the upload zone
     FinSiteUpload.init('upload-zone', (file) => {
       checkReady();
     });
 
-    // Analyze button click
+    // i wire up the analyze button
     if (analyzeBtn) {
       analyzeBtn.addEventListener('click', startAnalysis);
     }
   }
 
-  // ── Start analysis flow
+  // i kick off the full analysis flow
   async function startAnalysis() {
     const file = FinSiteUpload.getCurrentFile();
     if (!file) return;
 
     const apiKey = document.getElementById('api-key')?.value || null;
 
-    // Switch to loading screen
+    // i switch to the loading screen first
     showLoadingScreen();
 
     try {
-      // Read CSV
+      // i read the file
       updateProgress(20, 'Reading your bank statement…');
       const csvText = await FinSiteUpload.readFile(file);
 
-      // Call API
+      // i call the API
       updateProgress(40, 'Connecting to AI engine…');
       await sleep(400);
 
@@ -102,7 +99,7 @@ const FinSiteApp = (() => {
 
       await sleep(500);
 
-      // Render dashboard
+      // i render the dashboard
       renderDashboard(result);
 
     } catch (err) {
@@ -111,7 +108,7 @@ const FinSiteApp = (() => {
     }
   }
 
-  // ── Loading screen
+  // i show the loading screen while the analysis runs
   function showLoadingScreen() {
     document.body.innerHTML = `
       <div class="loading-screen">
@@ -151,7 +148,7 @@ const FinSiteApp = (() => {
     `;
   }
 
-  // ── Render full dashboard
+  // i render the full dashboard once the analysis comes back
   function renderDashboard(d) {
     const netFlow = (d.totalIn || 0) - (d.totalOut || 0);
     const netPositive = netFlow >= 0;
@@ -455,9 +452,9 @@ const FinSiteApp = (() => {
     `;
   }
 
-  // ── Bind sidebar nav events
+  // i bind the sidebar nav and score ring animation after the dashboard renders
   function bindDashboardEvents() {
-    // Score ring animation
+    // i animate the score ring
     setTimeout(() => {
       const circle = document.getElementById('score-circle');
       if (circle && _data) {
@@ -468,11 +465,11 @@ const FinSiteApp = (() => {
       }
     }, 400);
 
-    // New analysis
+    // i wire up new analysis button
     const newBtn = document.getElementById('new-analysis-btn');
     if (newBtn) newBtn.addEventListener('click', () => location.reload());
 
-    // Nav items (visual only for now - all data already shown)
+    // i handle nav tab switching (visual only for now — all data is already shown)
     document.querySelectorAll('[data-tab]').forEach(item => {
       item.addEventListener('click', () => {
         document.querySelectorAll('[data-tab]').forEach(n => n.classList.remove('active'));
@@ -481,12 +478,10 @@ const FinSiteApp = (() => {
     });
   }
 
-  // ── Animate number counters
-  function animateNumbers() {
-    // Numbers just fade in via CSS - could add counter animation here
-  }
+  // i fade numbers in via CSS — could add counter animation here later
+  function animateNumbers() {}
 
-  // ── Utility
+  // i use this everywhere i need a small delay
   function sleep(ms) {
     return new Promise(r => setTimeout(r, ms));
   }
@@ -494,7 +489,7 @@ const FinSiteApp = (() => {
   return { init, startAnalysis };
 })();
 
-// Boot when DOM is ready
+// i boot when the DOM is ready
 document.addEventListener('DOMContentLoaded', () => {
   if (document.getElementById('analyze-btn')) {
     FinSiteApp.init();

@@ -1,10 +1,10 @@
 <?php
-// server-side proxy for the claude API
-// keeps the API key out of the browser — receives the prompt via POST, returns JSON
+// i use this as a server-side proxy for the claude API
+// i keep the API key out of the browser — i receive the prompt via POST and return JSON
 
 require_once __DIR__ . '/config.php';
 
-// set headers
+// i set my headers
 header('Content-Type: application/json; charset=utf-8');
 header('Access-Control-Allow-Origin: ' . ALLOWED_ORIGIN);
 header('Access-Control-Allow-Methods: POST, OPTIONS');
@@ -13,7 +13,7 @@ header('X-Content-Type-Options: nosniff');
 header('X-Frame-Options: DENY');
 header('Referrer-Policy: strict-origin-when-cross-origin');
 
-// handle CORS preflight
+// i handle CORS preflight
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     http_response_code(204);
     exit;
@@ -32,13 +32,13 @@ if (strlen($prompt) > 20000) {
     respond_error('Prompt too large. Please upload a smaller file.');
 }
 
-// make sure the key is actually set
+// i make sure my key is actually set before going further
 $apiKey = ANTHROPIC_API_KEY;
 if (empty($apiKey) || $apiKey === 'YOUR_API_KEY_HERE') {
     respond_error('API key not configured. Set ANTHROPIC_API_KEY in php/config.php.');
 }
 
-// build and send the request to claude
+// i build the payload and send it to claude
 $payload = json_encode([
     'model'      => ANTHROPIC_MODEL,
     'max_tokens' => ANTHROPIC_MAX_TOKENS,
@@ -54,20 +54,19 @@ curl_setopt_array($ch, [
     CURLOPT_POSTFIELDS     => $payload,
     CURLOPT_HTTPHEADER     => [
         'Content-Type: application/json',
-        'x-api-key: ' . $apiKey,
-        'anthropic-version: ' . ANTHROPIC_VERSION,
+        "x-api-key: {$apiKey}",
+        "anthropic-version: " . ANTHROPIC_VERSION,
     ],
     CURLOPT_TIMEOUT        => 60,
     CURLOPT_SSL_VERIFYPEER => true,
 ]);
 
-$response = curl_exec($ch);
-$httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+$response  = curl_exec($ch);
+$httpCode  = curl_getinfo($ch, CURLINFO_HTTP_CODE);
 $curlError = curl_error($ch);
-curl_close($ch);
 
 if ($curlError) {
-    respond_error('Network error: ' . $curlError);
+    respond_error("Network error: {$curlError}");
 }
 
 $data = json_decode($response, true);
@@ -86,7 +85,7 @@ echo json_encode(['result' => $result, 'error' => null]);
 exit;
 
 
-// sends back a JSON error and stops execution
+// i use this to send back a JSON error and stop execution
 function respond_error(string $message, int $code = 400): never {
     if (DEBUG_MODE) error_log("FinSite error: $message");
     http_response_code($code);

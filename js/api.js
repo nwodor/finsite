@@ -1,11 +1,11 @@
-// handles all the claude API stuff — either direct from the browser or through the PHP proxy
+// i handle all the claude API calls here — either direct from the browser or through my PHP proxy
 
 const FinSiteAPI = (() => {
 
   const MODEL = 'claude-sonnet-4-20250514';
   const MAX_TOKENS = 3000;
 
-  // builds the prompt we send to claude — tells it exactly what format to return
+  // i build the prompt i send to claude — i tell it exactly what format to return
   function buildPrompt(csvText) {
     const preview = csvText.slice(0, 7000);
     return `You are FinSite AI — a sharp, no-nonsense personal finance analyst.
@@ -52,7 +52,7 @@ Bank statement content:
 ${preview}`;
   }
 
-  // calls claude directly from the browser — needs the dangerous-direct-browser-access header
+  // i call claude directly from the browser — needs the dangerous-direct-browser-access header
   async function callDirect(csvText, apiKey) {
     const response = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
@@ -79,7 +79,7 @@ ${preview}`;
     return parseJSON(raw);
   }
 
-  // goes through the PHP proxy instead — keeps the key server-side
+  // i route through my PHP proxy instead — keeps the key server-side
   async function callProxy(csvText) {
     const formData = new FormData();
     formData.append('prompt', buildPrompt(csvText));
@@ -99,7 +99,7 @@ ${preview}`;
     return parseJSON(data.result || '{}');
   }
 
-  // claude sometimes wraps json in markdown fences even when told not to — strip that out
+  // claude sometimes wraps json in markdown fences even when i tell it not to — i strip that out
   function parseJSON(raw) {
     const clean = raw.replace(/```json\s*/gi, '').replace(/```\s*/g, '').trim();
     try {
@@ -111,7 +111,7 @@ ${preview}`;
     }
   }
 
-  // main entry — if there's a key use it directly, otherwise fall back to proxy
+  // main entry — if i have a key i use it directly, otherwise i fall back to the proxy
   async function analyze(csvText, apiKey = null) {
     if (apiKey && apiKey.trim().length > 10) {
       return callDirect(csvText, apiKey.trim());
