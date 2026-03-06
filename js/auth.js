@@ -12,7 +12,30 @@ const AuthApp = (() => {
 
   // ── Floating emoji background ─────────────────────────────────────────────
 
-  const EMOJIS = ['💰','💳','📈','💵','💹','📊','💎','🪙','💸','🤑','🏦','💲','📉','🏧','💴','💶','💷','🤝','📋','🔐','💼','🏆','📱','🎯'];
+  // i use Google's Noto Animated Emoji CDN — free, animated WebP, looks great everywhere
+  const NOTO_BASE = 'https://fonts.gstatic.com/s/e/notoemoji/latest';
+  const EMOJI_CODEPOINTS = [
+    '1f4b0', // 💰 money bag
+    '1f4b3', // 💳 credit card
+    '1f4c8', // 📈 chart up
+    '1f4b5', // 💵 dollar bill
+    '1f4ca', // 📊 bar chart
+    '1f48e', // 💎 gem
+    '1fa99', // 🪙 coin
+    '1f4b8', // 💸 money wings
+    '1f911', // 🤑 money face
+    '1f3e6', // 🏦 bank
+    '1f4c9', // 📉 chart down
+    '1f4bc', // 💼 briefcase
+    '1f3c6', // 🏆 trophy
+    '1f3af', // 🎯 bullseye
+    '1f510', // 🔐 locked key
+    '1f91d', // 🤝 handshake
+    '1f4b9', // 💹 chart yen
+    '1f4b2', // 💲 dollar sign
+    '1f4cb', // 📋 clipboard
+    '1f3e7', // 🏧 ATM
+  ];
 
   // i randomly pick one of four distinct motion styles
   const ANIMATIONS = ['emojiRise', 'emojiDrift', 'emojiSway', 'emojiBounce'];
@@ -29,22 +52,28 @@ const AuthApp = (() => {
     const field = document.getElementById('emoji-field');
     if (!field) return;
 
-    // i shuffle the emoji list so the order is random each load
-    const shuffled = [...EMOJIS].sort(() => Math.random() - 0.5);
+    // i shuffle the list so the layout is different every load
+    const shuffled = [...EMOJI_CODEPOINTS].sort(() => Math.random() - 0.5);
 
-    for (let i = 0; i < 24; i++) {
-      const el  = document.createElement('span');
-      el.className = 'float-emoji';
-      el.textContent = shuffled[i % shuffled.length];
+    for (let i = 0; i < 22; i++) {
+      const cp   = shuffled[i % shuffled.length];
+      const anim = ANIMATIONS[Math.floor(Math.random() * ANIMATIONS.length)];
+      const size = 52 + Math.random() * 44;         // 52–96px — big sticker scale
+      const left = 2  + Math.random() * 96;         // 2–98% across
+      const dur  = 14 + Math.random() * 16;         // 14–30s varied pace
+      const delay = -(Math.random() * dur);          // i pre-offset so they're mid-flight on load
 
-      const anim  = ANIMATIONS[Math.floor(Math.random() * ANIMATIONS.length)];
-      const size  = 32 + Math.random() * 34;         // 32–66px — big like bitmoji
-      const left  = 2 + Math.random() * 96;          // 2–98% across
-      const dur   = 14 + Math.random() * 16;         // 14–30s — varied pace
-      const delay = -(Math.random() * dur);           // i pre-offset so they're mid-flight on load
+      const img = document.createElement('img');
+      img.className = 'float-emoji';
+      img.src = `${NOTO_BASE}/${cp}/512.webp`;
+      img.alt = '';
+      img.draggable = false;
+      // i hide the element if the image fails to load
+      img.onerror = () => { img.style.display = 'none'; };
 
-      el.style.cssText = `
-        font-size: ${size}px;
+      img.style.cssText = `
+        width: ${size}px;
+        height: ${size}px;
         left: ${left}%;
         animation-name: ${anim};
         animation-duration: ${dur}s;
@@ -54,7 +83,7 @@ const AuthApp = (() => {
         opacity: 0;
       `;
 
-      field.appendChild(el);
+      field.appendChild(img);
     }
   }
 
