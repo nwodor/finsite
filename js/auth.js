@@ -12,28 +12,45 @@ const AuthApp = (() => {
 
   // ── Floating emoji background ─────────────────────────────────────────────
 
-  const EMOJIS = ['💰','💳','📈','💵','💹','📊','💎','🪙','💸','🤑','🏦','💲','📉','🏧','💴','💶','💷','🤝','📋','🔐'];
+  const EMOJIS = ['💰','💳','📈','💵','💹','📊','💎','🪙','💸','🤑','🏦','💲','📉','🏧','💴','💶','💷','🤝','📋','🔐','💼','🏆','📱','🎯'];
+
+  // i randomly pick one of four distinct motion styles
+  const ANIMATIONS = ['emojiRise', 'emojiDrift', 'emojiSway', 'emojiBounce'];
+
+  // i vary the easing per animation type so each feels different
+  const EASINGS = {
+    emojiRise:   'cubic-bezier(0.25, 0.46, 0.45, 0.94)',
+    emojiDrift:  'cubic-bezier(0.42, 0, 0.58, 1)',
+    emojiSway:   'cubic-bezier(0.34, 1.3, 0.64, 1)',
+    emojiBounce: 'cubic-bezier(0.68, -0.55, 0.265, 1.55)',
+  };
 
   function spawnEmojis() {
     const field = document.getElementById('emoji-field');
     if (!field) return;
 
-    // i spawn 18 emojis staggered across the full width
-    for (let i = 0; i < 18; i++) {
-      const el = document.createElement('span');
-      el.className = 'float-emoji';
-      el.textContent = EMOJIS[i % EMOJIS.length];
+    // i shuffle the emoji list so the order is random each load
+    const shuffled = [...EMOJIS].sort(() => Math.random() - 0.5);
 
-      const size   = 22 + Math.random() * 22;          // 22–44px
-      const left   = 3 + Math.random() * 94;           // 3–97% across
-      const dur    = 12 + Math.random() * 14;          // 12–26s
-      const delay  = -(Math.random() * dur);            // i stagger the start so they're already mid-flight on load
+    for (let i = 0; i < 24; i++) {
+      const el  = document.createElement('span');
+      el.className = 'float-emoji';
+      el.textContent = shuffled[i % shuffled.length];
+
+      const anim  = ANIMATIONS[Math.floor(Math.random() * ANIMATIONS.length)];
+      const size  = 32 + Math.random() * 34;         // 32–66px — big like bitmoji
+      const left  = 2 + Math.random() * 96;          // 2–98% across
+      const dur   = 14 + Math.random() * 16;         // 14–30s — varied pace
+      const delay = -(Math.random() * dur);           // i pre-offset so they're mid-flight on load
 
       el.style.cssText = `
         font-size: ${size}px;
         left: ${left}%;
+        animation-name: ${anim};
         animation-duration: ${dur}s;
         animation-delay: ${delay}s;
+        animation-timing-function: ${EASINGS[anim]};
+        animation-iteration-count: infinite;
         opacity: 0;
       `;
 
