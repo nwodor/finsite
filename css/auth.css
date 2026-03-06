@@ -107,6 +107,46 @@ body {
   100% { transform: translate(0px, 0px) scale(1); }
 }
 
+/* ── Floating emoji field ── */
+.emoji-field {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 1;
+  overflow: hidden;
+}
+
+.float-emoji {
+  position: absolute;
+  bottom: -80px;
+  font-size: 28px;
+  line-height: 1;
+  user-select: none;
+  animation: emojiRise linear infinite;
+  will-change: transform, opacity;
+  filter: drop-shadow(0 2px 8px rgba(0,0,0,0.06));
+}
+
+@keyframes emojiRise {
+  0% {
+    transform: translateY(0) translateX(0) rotate(0deg) scale(1);
+    opacity: 0;
+  }
+  8% { opacity: 0.55; }
+  40% {
+    transform: translateY(-38vh) translateX(28px) rotate(12deg) scale(1.08);
+  }
+  70% {
+    transform: translateY(-68vh) translateX(-18px) rotate(-8deg) scale(0.95);
+    opacity: 0.45;
+  }
+  92% { opacity: 0.2; }
+  100% {
+    transform: translateY(-105vh) translateX(10px) rotate(5deg) scale(0.9);
+    opacity: 0;
+  }
+}
+
 /* ── Auth shell ── */
 .auth-shell {
   position: relative;

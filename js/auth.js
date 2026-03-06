@@ -14,9 +14,42 @@ const AuthApp = (() => {
   // Pull client ID from config.local.js (window.FINSITE_GOOGLE_CLIENT_ID)
   const GOOGLE_CLIENT_ID = (typeof window !== 'undefined' && window.FINSITE_GOOGLE_CLIENT_ID) || null;
 
+  // ── Floating emoji background ─────────────────────────────────────────────
+
+  const EMOJIS = ['💰','💳','📈','💵','💹','📊','💎','🪙','💸','🤑','🏦','💲','📉','🏧','💴','💶','💷','🤝','📋','🔐'];
+
+  function spawnEmojis() {
+    const field = document.getElementById('emoji-field');
+    if (!field) return;
+
+    // spawn 18 emojis staggered across the full width
+    for (let i = 0; i < 18; i++) {
+      const el = document.createElement('span');
+      el.className = 'float-emoji';
+      el.textContent = EMOJIS[i % EMOJIS.length];
+
+      const size   = 22 + Math.random() * 22;          // 22–44px
+      const left   = 3 + Math.random() * 94;           // 3–97% across
+      const dur    = 12 + Math.random() * 14;          // 12–26s
+      const delay  = -(Math.random() * dur);            // stagger start so they're already mid-flight on load
+
+      el.style.cssText = `
+        font-size: ${size}px;
+        left: ${left}%;
+        animation-duration: ${dur}s;
+        animation-delay: ${delay}s;
+        opacity: 0;
+      `;
+
+      field.appendChild(el);
+    }
+  }
+
   // ── Boot ──────────────────────────────────────────────────────────────────
 
   function init() {
+    spawnEmojis();
+
     // If already logged in, skip to the upload page
     if (getSession()) {
       window.location.replace('./index.html');
