@@ -66,7 +66,3 @@ vanilla HTML, CSS, and JS on the front end. PHP for the proxy. Claude Sonnet for
 ## what's next
 
 - [ ] user accounts + login
-- [ ] save reports to a database, compare month over month
-- [ ] PDF export of the report
-- [ ] budget goal tracking
-- [ ] multi-currency support
