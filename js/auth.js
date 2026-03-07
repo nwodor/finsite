@@ -1,18 +1,14 @@
-// i handle sign in and sign up here — Google OAuth and email/password
-// i store sessions in localStorage for now — i'll swap saveSession() for a real backend call later
+// handling sign in and sign up here — Firebase Auth for email/password and Google OAuth
+// Firebase manages sessions; localStorage is used as a fast client-side cache
 
 const AuthApp = (() => {
 
   let _mode = 'signin'; // 'signin' | 'signup'
   let _pwVisible = false;
-  let _googleReady = false;
-
-  // i pull the client ID from config.local.js if i've set it
-  const GOOGLE_CLIENT_ID = (typeof window !== 'undefined' && window.FINSITE_GOOGLE_CLIENT_ID) || null;
 
   // ── Floating emoji background ─────────────────────────────────────────────
 
-  // i use Google's Noto Animated Emoji CDN — free, animated WebP, looks great everywhere
+  // using Google's Noto Animated Emoji CDN — free, animated WebP, looks great everywhere
   const NOTO_BASE = 'https://fonts.gstatic.com/s/e/notoemoji/latest';
   const EMOJI_CODEPOINTS = [
     '1f4b0', // 💰 money bag
@@ -92,25 +88,27 @@ const AuthApp = (() => {
   function init() {
     spawnEmojis();
 
-    // i skip to the upload page if i'm already logged in
+    // skipping to the app if already logged in — Firebase also keeps state via onAuthStateChanged
     if (getSession()) {
-      window.location.replace('./index.html');
+      window.location.replace('./app.html');
       return;
     }
 
-    // i load Google Identity Services if i've configured a client ID
-    if (GOOGLE_CLIENT_ID) {
-      _loadGoogleScript();
-    }
-
-    // i set the client ID on the hidden onload div
-    const onload = document.getElementById('g_id_onload');
-    if (onload && GOOGLE_CLIENT_ID) {
-      onload.setAttribute('data-client_id', GOOGLE_CLIENT_ID);
-      onload.style.display = '';
+    // initializing Firebase so it's ready when the user hits submit or the Google button
+    if (FinSiteFirebase.isConfigured()) {
+      FinSiteFirebase.initFirebase();
     }
 
     setMode('signin');
+
+    // wiring up all interactive elements here so auth.html needs no inline event handlers
+    document.getElementById('tab-signin')?.addEventListener('click', () => setMode('signin'));
+    document.getElementById('tab-signup')?.addEventListener('click', () => setMode('signup'));
+    document.getElementById('google-btn')?.addEventListener('click', handleGoogleClick);
+    document.getElementById('auth-form')?.addEventListener('submit', handleSubmit);
+    document.getElementById('forgot-link')?.addEventListener('click', handleForgot);
+    document.getElementById('toggle-pw')?.addEventListener('click', togglePassword);
+    document.getElementById('switch-btn')?.addEventListener('click', toggleMode);
   }
 
   // ── Mode toggle ───────────────────────────────────────────────────────────
@@ -187,7 +185,7 @@ const AuthApp = (() => {
 
   // ── Form submission ───────────────────────────────────────────────────────
 
-  function handleSubmit(e) {
+  async function handleSubmit(e) {
     e.preventDefault();
     clearError();
 
@@ -196,14 +194,14 @@ const AuthApp = (() => {
     const name     = document.getElementById('input-name')?.value.trim() || '';
     const confirm  = document.getElementById('input-confirm')?.value || '';
 
-    // i validate before doing anything
+    // validating before hitting Firebase
     if (!_isValidEmail(email)) {
       showError('Please enter a valid email address.');
       document.getElementById('input-email')?.classList.add('error');
       return;
     }
-    if (password.length < 8) {
-      showError('Password must be at least 8 characters.');
+    if (password.length < 6) {
+      showError('Password must be at least 6 characters.');
       document.getElementById('input-password')?.classList.add('error');
       return;
     }
@@ -220,72 +218,89 @@ const AuthApp = (() => {
       }
     }
 
+    if (!FinSiteFirebase.isConfigured()) {
+      showError('Firebase is not configured. Add FINSITE_FIREBASE_CONFIG to js/config.local.js.');
+      return;
+    }
+
+    FinSiteFirebase.initFirebase();
+    const auth = FinSiteFirebase.getAuth();
     setLoading(true);
 
-    // i fake a brief async delay here — i'll replace this with a real API call later
-    setTimeout(() => {
-      saveSession({
-        name:     _mode === 'signup' ? name : (email.split('@')[0]),
-        email,
-        provider: 'email',
-        avatar:   null,
-      });
+    try {
+      if (_mode === 'signup') {
+        // creating account then saving profile to Firestore
+        const cred = await auth.createUserWithEmailAndPassword(email, password);
+        await cred.user.updateProfile({ displayName: name });
+        await FinSiteFirebase.saveUserProfile(cred.user.uid, {
+          name, email, provider: 'email', avatar: null,
+        });
+        saveSession({ name, email, provider: 'email', avatar: null, uid: cred.user.uid });
+      } else {
+        const cred = await auth.signInWithEmailAndPassword(email, password);
+        const u = cred.user;
+        saveSession({
+          name:     u.displayName || email.split('@')[0],
+          email:    u.email,
+          provider: 'email',
+          avatar:   u.photoURL || null,
+          uid:      u.uid,
+        });
+      }
       redirect();
-    }, 600);
+    } catch (err) {
+      showError(FinSiteFirebase.friendlyError(err));
+    }
   }
 
   // ── Google OAuth ──────────────────────────────────────────────────────────
 
-  function handleGoogleClick() {
-    if (!GOOGLE_CLIENT_ID) {
-      showError(
-        'Google Sign-In is not configured. Add your Google Client ID to js/config.local.js:\n' +
-        'window.FINSITE_GOOGLE_CLIENT_ID = "your-client-id.apps.googleusercontent.com";'
-      );
+  // using Firebase's built-in Google popup — no GSI script needed
+  async function handleGoogleClick() {
+    if (!FinSiteFirebase.isConfigured()) {
+      showError('Firebase is not configured. Add your real Firebase credentials to js/config.local.js.');
       return;
     }
-    if (!_googleReady) {
-      showError('Google Sign-In is still loading — please try again in a moment.');
-      return;
-    }
-    google.accounts.id.prompt((notification) => {
-      if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
-        // i fall back to a popup if the prompt doesn't show
-        google.accounts.oauth2.initTokenClient({
-          client_id: GOOGLE_CLIENT_ID,
-          scope: 'openid email profile',
-          callback: () => {},
-        }).requestAccessToken();
-      }
-    });
-  }
 
-  // i get called by Google Identity Services after the user signs in
-  function handleGoogleCallback(response) {
+    FinSiteFirebase.initFirebase();
+    const auth     = FinSiteFirebase.getAuth();
+    const provider = new firebase.auth.GoogleAuthProvider();
+    const btn      = document.getElementById('google-btn');
+
+    if (btn) { btn.disabled = true; btn.style.opacity = '0.7'; }
+
     try {
-      const payload = _parseJWT(response.credential);
-      saveSession({
-        name:     payload.name || payload.email,
-        email:    payload.email,
-        avatar:   payload.picture || null,
+      const cred = await auth.signInWithPopup(provider);
+      const u    = cred.user;
+
+      // saving/updating the Firestore profile on every Google login
+      await FinSiteFirebase.saveUserProfile(u.uid, {
+        name:     u.displayName || '',
+        email:    u.email,
+        avatar:   u.photoURL || null,
         provider: 'google',
+      });
+
+      saveSession({
+        name:     u.displayName || u.email,
+        email:    u.email,
+        provider: 'google',
+        avatar:   u.photoURL || null,
+        uid:      u.uid,
       });
       redirect();
     } catch (err) {
-      showError('Google sign-in failed. Please try again.');
-      console.error('Google callback error:', err);
+      if (btn) { btn.disabled = false; btn.style.opacity = ''; }
+      console.error('Google sign-in error:', err.code, err.message, err);
+      if (err.code !== 'auth/popup-closed-by-user') {
+        showError(FinSiteFirebase.friendlyError(err));
+      }
     }
   }
 
-  function _loadGoogleScript() {
-    if (document.getElementById('gsi-script')) return;
-    const script = document.createElement('script');
-    script.id  = 'gsi-script';
-    script.src = 'https://accounts.google.com/gsi/client';
-    script.async = true;
-    script.defer = true;
-    script.onload = () => { _googleReady = true; };
-    document.head.appendChild(script);
+  // keeping this as a no-op stub — GSI replaced by Firebase signInWithPopup above
+  function handleGoogleCallback() {
+    console.warn('handleGoogleCallback: GSI replaced by Firebase signInWithPopup — callback ignored.');
   }
 
   // ── Forgot password ───────────────────────────────────────────────────────
@@ -297,8 +312,15 @@ const AuthApp = (() => {
       showError('Enter your email address above, then click "Forgot password?".');
       return;
     }
-    // i'll hook this up to my backend's password reset endpoint later
-    showError('Password reset is not yet configured. Contact the site admin.');
+      // hooking this up to Firebase password reset
+    if (!FinSiteFirebase.isConfigured()) {
+      showError('Password reset requires Firebase. Add FINSITE_FIREBASE_CONFIG to js/config.local.js.');
+      return;
+    }
+    FinSiteFirebase.initFirebase();
+    FinSiteFirebase.getAuth().sendPasswordResetEmail(email)
+      .then(() => showError('Password reset email sent — check your inbox.'))
+      .catch(err => showError(FinSiteFirebase.friendlyError(err)));
   }
 
   // ── Session ───────────────────────────────────────────────────────────────
@@ -326,7 +348,19 @@ const AuthApp = (() => {
   }
 
   function redirect() {
-    window.location.replace('./index.html');
+    window.location.replace('./app.html');
+  }
+
+  // signing out of Firebase and clearing the local session cache
+  async function logout() {
+    try {
+      if (FinSiteFirebase.isConfigured()) {
+        FinSiteFirebase.initFirebase();
+        await FinSiteFirebase.getAuth().signOut();
+      }
+    } catch (_) {}
+    localStorage.removeItem('finsite_session');
+    window.location.replace('./auth.html');
   }
 
   // ── UI helpers ────────────────────────────────────────────────────────────
@@ -365,17 +399,6 @@ const AuthApp = (() => {
     return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
   }
 
-  function _parseJWT(token) {
-    const base64 = token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/');
-    const json = decodeURIComponent(
-      atob(base64)
-        .split('')
-        .map(c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
-        .join('')
-    );
-    return JSON.parse(json);
-  }
-
   // ── Expose ────────────────────────────────────────────────────────────────
   return {
     init,
@@ -387,6 +410,7 @@ const AuthApp = (() => {
     handleGoogleCallback,
     handleForgot,
     getSession,
+    logout,
   };
 
 })();

@@ -1,6 +1,9 @@
-# API keys — never commit 
+# API keys — never commit
 php/config.php
 js/config.local.js
+
+# SQLite database
+database/*.sqlite
 
 # OS
 .DS_Store

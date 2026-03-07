@@ -1,11 +1,11 @@
-// i control all the app state here and render the results dashboard
+// controlling all the app state here and rendering the results dashboard
 
 const FinSiteApp = (() => {
 
   let _data = null;
   let _activeTab = 'overview';
 
-  // i use this to format numbers as currency
+  // formatting numbers as currency
   const fmt = (n) => {
     if (n === undefined || n === null) return '—';
     return new Intl.NumberFormat('en-US', {
@@ -27,7 +27,7 @@ const FinSiteApp = (() => {
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#x27;');
 
-  // i pick a color based on the score range
+  // picking a color based on the score range
   function scoreColor(s) {
     if (s >= 80) return 'var(--green-600)';
     if (s >= 60) return 'var(--green-500)';
@@ -35,56 +35,56 @@ const FinSiteApp = (() => {
     return 'var(--red)';
   }
 
-  // i initialize the upload page
+  // initializing the upload page
   function init() {
     const analyzeBtn = document.getElementById('analyze-btn');
     const apiKeyInput = document.getElementById('api-key');
     const fileInput = document.getElementById('file-input');
 
-    // i auto-fill the key from my local config and hide the input section
+    // auto-filling the key from my local config and hiding the input section
     if (window.FINSITE_KEY && apiKeyInput) {
       apiKeyInput.value = window.FINSITE_KEY;
       const keySection = document.getElementById('api-key-section');
       if (keySection) keySection.style.display = 'none';
     }
 
-    // i enable or disable the analyze button depending on what's ready
+    // enabling or disabling the analyze button depending on what's ready
     function checkReady() {
       const hasFile = !!FinSiteUpload.getCurrentFile();
       const hasKey = (apiKeyInput?.value || '').trim().length > 10;
-      // i allow proxy mode (no key) OR direct mode (with key)
+      // allowing proxy mode (no key) OR direct mode (with key)
       if (analyzeBtn) analyzeBtn.disabled = !hasFile;
     }
 
     if (apiKeyInput) apiKeyInput.addEventListener('input', checkReady);
 
-    // i init the upload zone
+    // initializing the upload zone
     FinSiteUpload.init('upload-zone', (file) => {
       checkReady();
     });
 
-    // i wire up the analyze button
+    // wiring up the analyze button
     if (analyzeBtn) {
       analyzeBtn.addEventListener('click', startAnalysis);
     }
   }
 
-  // i kick off the full analysis flow
+  // kicking off the full analysis flow
   async function startAnalysis() {
     const file = FinSiteUpload.getCurrentFile();
     if (!file) return;
 
     const apiKey = document.getElementById('api-key')?.value || null;
 
-    // i switch to the loading screen first
+    // switching to the loading screen first
     showLoadingScreen();
 
     try {
-      // i read the file
+      // reading the file
       updateProgress(20, 'Reading your bank statement…');
       const csvText = await FinSiteUpload.readFile(file);
 
-      // i call the API
+      // calling the API
       updateProgress(40, 'Connecting to AI engine…');
       await sleep(400);
 
@@ -99,7 +99,7 @@ const FinSiteApp = (() => {
 
       await sleep(500);
 
-      // i render the dashboard
+      // rendering the dashboard
       renderDashboard(result);
 
     } catch (err) {
@@ -108,7 +108,7 @@ const FinSiteApp = (() => {
     }
   }
 
-  // i show the loading screen while the analysis runs
+  // showing the loading screen while the analysis runs
   function showLoadingScreen() {
     document.body.innerHTML = `
       <div class="loading-screen">
@@ -142,13 +142,15 @@ const FinSiteApp = (() => {
           <div style="font-size:40px;margin-bottom:16px;">⚠️</div>
           <div style="font-size:18px;font-weight:700;margin-bottom:8px;">Analysis Failed</div>
           <div style="font-size:13px;color:var(--text-secondary);margin-bottom:24px;">${escape(msg)}</div>
-          <button class="btn btn-primary" onclick="location.reload()">Try Again</button>
+          <button class="btn btn-primary" id="retry-btn">Try Again</button>
         </div>
       </div>
     `;
+    // wiring after innerHTML — inline onclick blocked by CSP
+    document.getElementById('retry-btn')?.addEventListener('click', () => location.reload());
   }
 
-  // i render the full dashboard once the analysis comes back
+  // rendering the full dashboard once the analysis comes back
   function renderDashboard(d) {
     const netFlow = (d.totalIn || 0) - (d.totalOut || 0);
     const netPositive = netFlow >= 0;
@@ -178,7 +180,31 @@ const FinSiteApp = (() => {
     animateNumbers();
   }
 
+  // reading the cached session to show the real user's name in the sidebar
+  function _getSessionUser() {
+    try {
+      const raw = localStorage.getItem('finsite_session');
+      return raw ? JSON.parse(raw) : null;
+    } catch { return null; }
+  }
+
+  // signing out of Firebase and clearing the local cache
+  async function _logout() {
+    try {
+      if (window.FinSiteFirebase?.isConfigured()) {
+        window.FinSiteFirebase.initFirebase();
+        await window.FinSiteFirebase.getAuth().signOut();
+      }
+    } catch (_) {}
+    localStorage.removeItem('finsite_session');
+    window.location.replace('./auth.html');
+  }
+
   function renderSidebar() {
+    const user    = _getSessionUser();
+    const name    = user?.name  || 'FinSite User';
+    const initials = name.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase() || 'FS';
+
     return `
       <aside class="sidebar">
         <div class="sidebar__logo">
@@ -202,13 +228,16 @@ const FinSiteApp = (() => {
           <div class="nav-item" id="new-analysis-btn" style="cursor:pointer;">
             <span class="nav-icon">➕</span> New Analysis
           </div>
+          <div class="nav-item" id="logout-btn" style="cursor:pointer;color:var(--text-muted);">
+            <span class="nav-icon">↩</span> Sign Out
+          </div>
         </nav>
         <div class="sidebar__footer">
           <div class="user-chip">
-            <div class="user-avatar">FS</div>
+            <div class="user-avatar">${escape(initials)}</div>
             <div>
-              <div class="user-name">FinSite User</div>
-              <div class="user-role">Personal Plan</div>
+              <div class="user-name">${escape(name)}</div>
+              <div class="user-role">${escape(user?.email || 'Personal Plan')}</div>
             </div>
           </div>
         </div>
@@ -431,7 +460,7 @@ const FinSiteApp = (() => {
             <div class="section-title">Statement Summary</div>
             <div class="section-sub">Parsed from your uploaded statement</div>
           </div>
-          <button class="btn btn-ghost" onclick="location.reload()">↩ New Analysis</button>
+          <button class="btn btn-ghost" id="statement-new-btn">↩ New Analysis</button>
         </div>
         <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:16px;">
           ${[
@@ -452,9 +481,9 @@ const FinSiteApp = (() => {
     `;
   }
 
-  // i bind the sidebar nav and score ring animation after the dashboard renders
+  // binding the sidebar nav and score ring animation after the dashboard renders
   function bindDashboardEvents() {
-    // i animate the score ring
+    // animating the score ring
     setTimeout(() => {
       const circle = document.getElementById('score-circle');
       if (circle && _data) {
@@ -465,11 +494,18 @@ const FinSiteApp = (() => {
       }
     }, 400);
 
-    // i wire up new analysis button
+    // wiring up the new analysis buttons (sidebar + statement section)
     const newBtn = document.getElementById('new-analysis-btn');
     if (newBtn) newBtn.addEventListener('click', () => location.reload());
 
-    // i handle nav tab switching (visual only for now — all data is already shown)
+    const stmtNewBtn = document.getElementById('statement-new-btn');
+    if (stmtNewBtn) stmtNewBtn.addEventListener('click', () => location.reload());
+
+    // wiring up the sign-out button
+    const logoutBtn = document.getElementById('logout-btn');
+    if (logoutBtn) logoutBtn.addEventListener('click', _logout);
+
+    // handling nav tab switching — visual only for now, all data is already shown
     document.querySelectorAll('[data-tab]').forEach(item => {
       item.addEventListener('click', () => {
         document.querySelectorAll('[data-tab]').forEach(n => n.classList.remove('active'));
@@ -478,10 +514,10 @@ const FinSiteApp = (() => {
     });
   }
 
-  // i fade numbers in via CSS — could add counter animation here later
+  // fading numbers in via CSS — could add counter animation here later
   function animateNumbers() {}
 
-  // i use this everywhere i need a small delay
+  // small delay utility — used throughout the analysis flow
   function sleep(ms) {
     return new Promise(r => setTimeout(r, ms));
   }
@@ -489,7 +525,7 @@ const FinSiteApp = (() => {
   return { init, startAnalysis };
 })();
 
-// i boot when the DOM is ready
+// booting when the DOM is ready
 document.addEventListener('DOMContentLoaded', () => {
   if (document.getElementById('analyze-btn')) {
     FinSiteApp.init();

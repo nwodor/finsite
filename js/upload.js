@@ -1,12 +1,12 @@
-// i handle everything related to file uploads here — drag & drop, clicking, validation, and parsing
-// i support CSV, Excel, PDF, and Word
+// handling everything related to file uploads here — drag & drop, clicking, validation, and parsing
+// supporting CSV, Excel, PDF, and Word
 
 const FinSiteUpload = (() => {
 
   let _onFileReady = null;
   let _currentFile = null;
 
-  // i wire up the drop zone and file input
+  // wiring up the drop zone and file input
   function init(zoneId, onFileReady) {
     _onFileReady = onFileReady;
 
@@ -41,7 +41,16 @@ const FinSiteUpload = (() => {
     });
   }
 
-  // i check the file is something i can actually read, then pass it along
+  // rejecting files whose reported MIME type is explicitly dangerous — defense in depth on top of the extension check
+  const _BLOCKED_MIMES = new Set([
+    'application/javascript', 'text/javascript', 'application/x-javascript',
+    'text/html', 'application/xhtml+xml',
+    'application/x-httpd-php', 'application/x-sh', 'application/x-csh',
+    'application/x-executable', 'application/x-msdownload', 'application/x-msdos-program',
+    'application/x-bat',
+  ]);
+
+  // checking the file is something I can actually read, then passing it along
   function handleFile(file) {
     const validExts = ['.csv', '.txt', '.pdf', '.doc', '.docx', '.xls', '.xlsx'];
     const fileName = file.name.toLowerCase();
@@ -49,6 +58,11 @@ const FinSiteUpload = (() => {
 
     if (!validExt) {
       showError('Please upload a supported file: CSV, Excel (.xls/.xlsx), PDF, or Word (.doc/.docx).');
+      return;
+    }
+
+    if (_BLOCKED_MIMES.has((file.type || '').toLowerCase())) {
+      showError('File type not allowed.');
       return;
     }
 
@@ -62,13 +76,13 @@ const FinSiteUpload = (() => {
     if (_onFileReady) _onFileReady(file);
   }
 
-  // i figure out the file type and use the right parser
+  // figuring out the file type and using the right parser
   async function readFile(file) {
     const ext = file.name.split('.').pop().toLowerCase();
     if (ext === 'pdf') return _readPDF(file);
     if (ext === 'doc' || ext === 'docx') return _readWord(file);
     if (ext === 'xls' || ext === 'xlsx') return _readExcel(file);
-    // plain text / CSV — i just read it directly
+    // plain text / CSV — reading it directly
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
       reader.onload = (e) => resolve(e.target.result);
@@ -77,7 +91,7 @@ const FinSiteUpload = (() => {
     });
   }
 
-  // i use this helper in the binary parsers below
+  // shared helper for the binary parsers below
   function _readAsArrayBuffer(file) {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
@@ -87,7 +101,7 @@ const FinSiteUpload = (() => {
     });
   }
 
-  // i extract text from each page using pdf.js
+  // extracting text from each page using pdf.js
   async function _readPDF(file) {
     if (typeof pdfjsLib === 'undefined') throw new Error('PDF.js library failed to load. Check your internet connection.');
     pdfjsLib.GlobalWorkerOptions.workerSrc =
@@ -103,7 +117,7 @@ const FinSiteUpload = (() => {
     return text;
   }
 
-  // i use mammoth to pull the raw text out of .doc/.docx files
+  // using mammoth to pull the raw text out of .doc/.docx files
   async function _readWord(file) {
     if (typeof mammoth === 'undefined') throw new Error('Mammoth.js library failed to load. Check your internet connection.');
     const buffer = await _readAsArrayBuffer(file);
@@ -111,7 +125,7 @@ const FinSiteUpload = (() => {
     return result.value;
   }
 
-  // i use sheetjs to convert the first sheet to CSV text so claude can read it
+  // using sheetjs to convert the first sheet to CSV text so the AI can read it
   async function _readExcel(file) {
     if (typeof XLSX === 'undefined') throw new Error('SheetJS library failed to load. Check your internet connection.');
     const buffer = await _readAsArrayBuffer(file);
@@ -121,7 +135,7 @@ const FinSiteUpload = (() => {
     return XLSX.utils.sheet_to_csv(sheet);
   }
 
-  // i swap the drop zone UI to show the selected file name and size
+  // swapping the drop zone UI to show the selected file name and size
   function updateZoneUI(file) {
     const zone = document.getElementById('upload-zone');
     if (!zone) return;
@@ -143,7 +157,7 @@ const FinSiteUpload = (() => {
     `;
   }
 
-  // i show an error in the UI and auto-hide it after 4 seconds
+  // showing an error in the UI and auto-hiding it after 4 seconds
   function showError(message) {
     const errEl = document.getElementById('upload-error');
     if (errEl) {
