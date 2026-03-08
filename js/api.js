@@ -1,9 +1,6 @@
-// handling all the AI API calls here — either direct from the browser or through my PHP proxy
+// handling all the AI API calls here — routing through my PHP proxy to keep the key server-side
 
 const FinSiteAPI = (() => {
-
-  const MODEL = 'claude-sonnet-4-20250514';
-  const MAX_TOKENS = 3000;
 
   // building the prompt to send to the AI — telling it exactly what format to return
   function buildPrompt(csvText) {
@@ -52,34 +49,7 @@ Bank statement content:
 ${preview}`;
   }
 
-  // calling the AI directly from the browser — needs the dangerous-direct-browser-access header
-  async function callDirect(csvText, apiKey) {
-    const response = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': apiKey,
-        'anthropic-version': '2023-06-01',
-        'anthropic-dangerous-direct-browser-access': 'true'
-      },
-      body: JSON.stringify({
-        model: MODEL,
-        max_tokens: MAX_TOKENS,
-        messages: [{ role: 'user', content: buildPrompt(csvText) }]
-      })
-    });
-
-    if (!response.ok) {
-      const err = await response.json().catch(() => ({}));
-      throw new Error(err?.error?.message || `HTTP ${response.status}`);
-    }
-
-    const data = await response.json();
-    const raw = data?.content?.[0]?.text || '{}';
-    return parseJSON(raw);
-  }
-
-  // routing through my PHP proxy instead — keeps the key server-side
+  // routing through my PHP proxy — the API key never touches the browser
   async function callProxy(csvText) {
     const formData = new FormData();
     formData.append('prompt', buildPrompt(csvText));
@@ -111,11 +81,8 @@ ${preview}`;
     }
   }
 
-  // main entry — using the key directly if provided, falling back to the proxy otherwise
-  async function analyze(csvText, apiKey = null) {
-    if (apiKey && apiKey.trim().length > 10) {
-      return callDirect(csvText, apiKey.trim());
-    }
+  // main entry — always going through the PHP proxy
+  async function analyze(csvText) {
     return callProxy(csvText);
   }
 

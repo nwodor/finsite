@@ -24,6 +24,12 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     respond_error('Method not allowed.', 405);
 }
 
+// rejecting requests that don't come from my own origin — blocks direct API abuse
+$origin = $_SERVER['HTTP_ORIGIN'] ?? $_SERVER['HTTP_REFERER'] ?? '';
+if (!empty($origin) && !str_starts_with($origin, ALLOWED_ORIGIN)) {
+    respond_error('Forbidden.', 403);
+}
+
 // rate limiting — 10 requests per IP per 60 seconds using a temp file per hashed IP
 _check_rate_limit();
 
@@ -97,28 +103,35 @@ function respond_error(string $message, int $code = 400): never {
     exit;
 }
 
-// sliding-window rate limiter — hashing the IP for privacy, locking the file to prevent races
+// dual-window rate limiter — 5 requests per minute, 20 per day, per hashed IP
 function _check_rate_limit(): void {
-    $ip     = hash('sha256', $_SERVER['REMOTE_ADDR'] ?? 'unknown');
-    $file   = sys_get_temp_dir() . '/finsite_rl_' . $ip;
-    $now    = time();
-    $window = 60;  // seconds
-    $limit  = 10;  // requests per window
+    $ip      = hash('sha256', $_SERVER['REMOTE_ADDR'] ?? 'unknown');
+    $file    = sys_get_temp_dir() . '/finsite_rl_' . $ip;
+    $now     = time();
 
     $fp = @fopen($file, 'c+');
-    if (!$fp) return; // fail open if we can't write to tmp
+    if (!$fp) return; // failing open if tmp isn't writable — don't block the user
 
     flock($fp, LOCK_EX);
     $data     = stream_get_contents($fp);
     $requests = $data ? (array) json_decode($data, true) : [];
 
-    // dropping timestamps outside the current window
-    $requests = array_values(array_filter($requests, fn($t) => $now - $t < $window));
+    // keeping only timestamps from the last 24 hours
+    $requests = array_values(array_filter($requests, fn($t) => $now - $t < 86400));
 
-    if (count($requests) >= $limit) {
+    // checking per-minute limit (last 60 seconds)
+    $last_minute = array_filter($requests, fn($t) => $now - $t < 60);
+    if (count($last_minute) >= 5) {
         flock($fp, LOCK_UN);
         fclose($fp);
-        respond_error('Rate limit exceeded. Please wait a moment before trying again.', 429);
+        respond_error('Too many requests — please wait a minute before analyzing again.', 429);
+    }
+
+    // checking per-day limit
+    if (count($requests) >= 20) {
+        flock($fp, LOCK_UN);
+        fclose($fp);
+        respond_error('Daily analysis limit reached. Come back tomorrow.', 429);
     }
 
     $requests[] = $now;

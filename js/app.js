@@ -38,43 +38,27 @@ const FinSiteApp = (() => {
   // initializing the upload page
   function init() {
     const analyzeBtn = document.getElementById('analyze-btn');
-    const apiKeyInput = document.getElementById('api-key');
-    const fileInput = document.getElementById('file-input');
 
-    // auto-filling the key from my local config and hiding the input section
-    if (window.FINSITE_KEY && apiKeyInput) {
-      apiKeyInput.value = window.FINSITE_KEY;
-      const keySection = document.getElementById('api-key-section');
-      if (keySection) keySection.style.display = 'none';
-    }
+    // hiding the API key section — key lives on the server now
+    const keySection = document.getElementById('api-key-section');
+    if (keySection) keySection.style.display = 'none';
 
-    // enabling or disabling the analyze button depending on what's ready
+    // enabling the analyze button once a file is selected
     function checkReady() {
-      const hasFile = !!FinSiteUpload.getCurrentFile();
-      const hasKey = (apiKeyInput?.value || '').trim().length > 10;
-      // allowing proxy mode (no key) OR direct mode (with key)
-      if (analyzeBtn) analyzeBtn.disabled = !hasFile;
+      if (analyzeBtn) analyzeBtn.disabled = !FinSiteUpload.getCurrentFile();
     }
-
-    if (apiKeyInput) apiKeyInput.addEventListener('input', checkReady);
 
     // initializing the upload zone
-    FinSiteUpload.init('upload-zone', (file) => {
-      checkReady();
-    });
+    FinSiteUpload.init('upload-zone', () => checkReady());
 
     // wiring up the analyze button
-    if (analyzeBtn) {
-      analyzeBtn.addEventListener('click', startAnalysis);
-    }
+    if (analyzeBtn) analyzeBtn.addEventListener('click', startAnalysis);
   }
 
   // kicking off the full analysis flow
   async function startAnalysis() {
     const file = FinSiteUpload.getCurrentFile();
     if (!file) return;
-
-    const apiKey = document.getElementById('api-key')?.value || null;
 
     // switching to the loading screen first
     showLoadingScreen();
@@ -84,12 +68,12 @@ const FinSiteApp = (() => {
       updateProgress(20, 'Reading your bank statement…');
       const csvText = await FinSiteUpload.readFile(file);
 
-      // calling the API
+      // calling the API through the PHP proxy
       updateProgress(40, 'Connecting to AI engine…');
       await sleep(400);
 
       updateProgress(60, 'Analyzing spending patterns…');
-      const result = await FinSiteAPI.analyze(csvText, apiKey);
+      const result = await FinSiteAPI.analyze(csvText);
 
       updateProgress(85, 'Generating insights…');
       await sleep(300);
