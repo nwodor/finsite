@@ -72,13 +72,77 @@ ${preview}`;
   // stripping markdown fences out — the API sometimes wraps JSON even when told not to
   function parseJSON(raw) {
     const clean = raw.replace(/```json\s*/gi, '').replace(/```\s*/g, '').trim();
+    let parsed;
     try {
-      return JSON.parse(clean);
+      parsed = JSON.parse(clean);
     } catch (e) {
       const match = clean.match(/\{[\s\S]*\}/);
-      if (match) return JSON.parse(match[0]);
-      throw new Error('Failed to parse AI response');
+      if (match) {
+        try { parsed = JSON.parse(match[0]); }
+        catch (e2) { throw new Error('Failed to parse AI response'); }
+      } else {
+        throw new Error('Failed to parse AI response');
+      }
     }
+    return sanitizeResponse(parsed);
+  }
+
+  // stripping any HTML from AI string fields so injected markup can't reach the DOM
+  function sanitizeStr(v) {
+    if (typeof v !== 'string') return '';
+    return v.replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  }
+
+  // validating the shape of the AI response and clamping numbers to safe ranges
+  function sanitizeResponse(d) {
+    if (!d || typeof d !== 'object') throw new Error('Invalid AI response structure');
+    return {
+      score:          Math.min(100, Math.max(0, parseInt(d.score) || 0)),
+      grade:          sanitizeStr(d.grade).slice(0, 3) || 'C',
+      summary:        sanitizeStr(d.summary).slice(0, 500),
+      health:         sanitizeStr(d.health).slice(0, 300),
+      totalIn:        parseFloat(d.totalIn)  || 0,
+      totalOut:       parseFloat(d.totalOut) || 0,
+      txCount:        parseInt(d.txCount)    || 0,
+      savingsRate:    Math.min(100, Math.max(0, parseFloat(d.savingsRate) || 0)),
+      topCategories:  Array.isArray(d.topCategories)
+        ? d.topCategories.slice(0, 10).map(c => ({
+            name:   sanitizeStr(c.name).slice(0, 60),
+            amount: parseFloat(c.amount) || 0,
+            count:  parseInt(c.count)   || 0,
+          }))
+        : [],
+      monthlyTrend:   Array.isArray(d.monthlyTrend)
+        ? d.monthlyTrend.slice(0, 12).map(m => ({
+            month:    sanitizeStr(m.month).slice(0, 10),
+            income:   parseFloat(m.income)   || 0,
+            spending: parseFloat(m.spending) || 0,
+          }))
+        : [],
+      wasteful:       Array.isArray(d.wasteful)
+        ? d.wasteful.slice(0, 8).map(w => ({
+            title:  sanitizeStr(w.title).slice(0, 100),
+            detail: sanitizeStr(w.detail).slice(0, 300),
+            amount: parseFloat(w.amount) || 0,
+          }))
+        : [],
+      savings:        Array.isArray(d.savings)
+        ? d.savings.slice(0, 8).map(s => ({
+            title:     sanitizeStr(s.title).slice(0, 100),
+            detail:    sanitizeStr(s.detail).slice(0, 300),
+            potential: parseFloat(s.potential) || 0,
+          }))
+        : [],
+      investments:    Array.isArray(d.investments)
+        ? d.investments.slice(0, 6).map(i => ({
+            title:  sanitizeStr(i.title).slice(0, 100),
+            detail: sanitizeStr(i.detail).slice(0, 300),
+          }))
+        : [],
+      quickWins:      Array.isArray(d.quickWins)
+        ? d.quickWins.slice(0, 6).map(q => sanitizeStr(q).slice(0, 200))
+        : [],
+    };
   }
 
   // main entry — always going through the PHP proxy

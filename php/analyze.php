@@ -24,13 +24,14 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     respond_error('Method not allowed.', 405);
 }
 
-// rejecting requests that don't come from my own origin — blocks direct API abuse
-$origin = $_SERVER['HTTP_ORIGIN'] ?? $_SERVER['HTTP_REFERER'] ?? '';
-if (!empty($origin) && !str_starts_with($origin, ALLOWED_ORIGIN)) {
+// strict exact-match origin check — str_starts_with was vulnerable to subdomain spoofing
+// e.g. http://localhost-evil.com would have passed the old prefix check
+$origin = $_SERVER['HTTP_ORIGIN'] ?? '';
+if (!empty($origin) && $origin !== ALLOWED_ORIGIN) {
     respond_error('Forbidden.', 403);
 }
 
-// rate limiting — 10 requests per IP per 60 seconds using a temp file per hashed IP
+// rate limiting — 5 requests per minute, 20 per day, per hashed IP
 _check_rate_limit();
 
 $prompt = trim($_POST['prompt'] ?? '');
@@ -44,8 +45,8 @@ if (strlen($prompt) > 20000) {
 
 // making sure the key is actually set before going further
 $apiKey = ANTHROPIC_API_KEY;
-if (empty($apiKey) || $apiKey === 'YOUR_API_KEY_HERE') {
-    respond_error('API key not configured. Set ANTHROPIC_API_KEY in php/config.php.');
+if (empty($apiKey) || $apiKey === 'YOUR_KEY_HERE') {
+    respond_error('API key not configured. Paste your Anthropic key into php/config.php.');
 }
 
 // building the payload and sending it to the AI
@@ -74,16 +75,25 @@ curl_setopt_array($ch, [
 $response  = curl_exec($ch);
 $httpCode  = curl_getinfo($ch, CURLINFO_HTTP_CODE);
 $curlError = curl_error($ch);
+curl_close($ch);
 
 if ($curlError) {
-    respond_error("Network error: {$curlError}");
+    // logging the real curl error internally, not exposing it to the client
+    if (DEBUG_MODE) error_log("FinSite curl error: {$curlError}");
+    respond_error('Network error — unable to reach the AI service. Please try again.');
 }
 
 $data = json_decode($response, true);
 
 if ($httpCode !== 200) {
-    $errMsg = $data['error']['message'] ?? "HTTP {$httpCode} from Anthropic API";
-    respond_error($errMsg, $httpCode);
+    // logging the real API error internally, returning a safe generic message to the browser
+    $internalMsg = $data['error']['message'] ?? "HTTP {$httpCode}";
+    if (DEBUG_MODE) error_log("FinSite API error [{$httpCode}]: {$internalMsg}");
+
+    // surface rate limit and auth errors so the user knows what happened, hide everything else
+    if ($httpCode === 429) respond_error('AI rate limit reached. Please wait a moment and try again.', 429);
+    if ($httpCode === 401) respond_error('AI service authentication failed. Check your API key.', 401);
+    respond_error('AI service returned an error. Please try again.', 500);
 }
 
 $result = $data['content'][0]['text'] ?? null;
@@ -97,7 +107,7 @@ exit;
 
 // sending back a JSON error and stopping execution
 function respond_error(string $message, int $code = 400): never {
-    if (DEBUG_MODE) error_log("FinSite error: $message");
+    if (DEBUG_MODE) error_log("FinSite error [{$code}]: $message");
     http_response_code($code);
     echo json_encode(['result' => null, 'error' => $message]);
     exit;
@@ -105,19 +115,23 @@ function respond_error(string $message, int $code = 400): never {
 
 // dual-window rate limiter — 5 requests per minute, 20 per day, per hashed IP
 function _check_rate_limit(): void {
-    $ip      = hash('sha256', $_SERVER['REMOTE_ADDR'] ?? 'unknown');
-    $file    = sys_get_temp_dir() . '/finsite_rl_' . $ip;
-    $now     = time();
+    $ip   = hash('sha256', $_SERVER['REMOTE_ADDR'] ?? 'unknown');
+    $file = sys_get_temp_dir() . '/finsite_rl_' . $ip;
+    $now  = time();
 
     $fp = @fopen($file, 'c+');
-    if (!$fp) return; // failing open if tmp isn't writable — don't block the user
+    if (!$fp) {
+        // i'm failing CLOSED here — if tmp isn't writable i'd rather block the request
+        // than silently let unlimited requests through
+        respond_error('Server configuration error — rate limiter unavailable.', 503);
+    }
 
     flock($fp, LOCK_EX);
-    $data     = stream_get_contents($fp);
-    $requests = $data ? (array) json_decode($data, true) : [];
+    $raw      = stream_get_contents($fp);
+    $requests = ($raw && is_array(json_decode($raw, true))) ? json_decode($raw, true) : [];
 
     // keeping only timestamps from the last 24 hours
-    $requests = array_values(array_filter($requests, fn($t) => $now - $t < 86400));
+    $requests = array_values(array_filter($requests, fn($t) => is_int($t) && $now - $t < 86400));
 
     // checking per-minute limit (last 60 seconds)
     $last_minute = array_filter($requests, fn($t) => $now - $t < 60);
