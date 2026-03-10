@@ -30,7 +30,7 @@ finsite/
 │   ├── upload.js       - handles file drops, clicks, parsing PDFs/Excel/etc
 │   └── app.js          - controls the whole app, renders the dashboard
 └── php/
-    ├── config.php      - your API key goes here (gitignored)
+    ├── config.php      -  API key goes here (gitignored)
     └── analyze.php     - server-side proxy so the key never hits the browser
 ```
 
