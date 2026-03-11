@@ -162,9 +162,8 @@ const FinSiteApp = (() => {
 
   async function _logout() {
     try {
-      if (window.FinSiteFirebase?.isConfigured()) {
-        window.FinSiteFirebase.initFirebase();
-        await window.FinSiteFirebase.getAuth().signOut();
+      if (window.FinSiteDB?.isConfigured()) {
+        await window.FinSiteDB.getClient().auth.signOut();
       }
     } catch (_) {}
     localStorage.removeItem('finsite_session');

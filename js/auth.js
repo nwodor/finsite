@@ -1,5 +1,5 @@
-// handling sign in and sign up here — Firebase Auth for email/password and Google OAuth
-// Firebase manages sessions; localStorage is used as a fast client-side cache
+// handling sign in and sign up here — Supabase Auth for email/password and Google OAuth
+// Supabase manages sessions; localStorage is used as a fast client-side cache for the guard
 
 const AuthApp = (() => {
 
@@ -8,7 +8,6 @@ const AuthApp = (() => {
 
   // ── Floating emoji background ─────────────────────────────────────────────
 
-  // using Google's Noto Animated Emoji CDN — free, animated WebP, looks great everywhere
   const NOTO_BASE = 'https://fonts.gstatic.com/s/e/notoemoji/latest';
   const EMOJI_CODEPOINTS = [
     '1f4b0', // 💰 money bag
@@ -33,10 +32,8 @@ const AuthApp = (() => {
     '1f3e7', // 🏧 ATM
   ];
 
-  // i randomly pick one of four distinct motion styles
   const ANIMATIONS = ['emojiRise', 'emojiDrift', 'emojiSway', 'emojiBounce'];
 
-  // i vary the easing per animation type so each feels different
   const EASINGS = {
     emojiRise:   'cubic-bezier(0.25, 0.46, 0.45, 0.94)',
     emojiDrift:  'cubic-bezier(0.42, 0, 0.58, 1)',
@@ -54,17 +51,16 @@ const AuthApp = (() => {
     for (let i = 0; i < 22; i++) {
       const cp   = shuffled[i % shuffled.length];
       const anim = ANIMATIONS[Math.floor(Math.random() * ANIMATIONS.length)];
-      const size = 52 + Math.random() * 44;         // 52–96px — big sticker scale
-      const left = 2  + Math.random() * 96;         // 2–98% across
-      const dur  = 14 + Math.random() * 16;         // 14–30s varied pace
-      const delay = -(Math.random() * dur);          // i pre-offset so they're mid-flight on load
+      const size = 52 + Math.random() * 44;
+      const left = 2  + Math.random() * 96;
+      const dur  = 14 + Math.random() * 16;
+      const delay = -(Math.random() * dur);
 
       const img = document.createElement('img');
       img.className = 'float-emoji';
       img.src = `${NOTO_BASE}/${cp}/512.webp`;
       img.alt = '';
       img.draggable = false;
-      // i hide the element if the image fails to load
       img.onerror = () => { img.style.display = 'none'; };
 
       img.style.cssText = `
@@ -85,23 +81,58 @@ const AuthApp = (() => {
 
   // ── Boot ──────────────────────────────────────────────────────────────────
 
-  function init() {
+  async function init() {
     spawnEmojis();
 
-    // skipping to the app if already logged in — Firebase also keeps state via onAuthStateChanged
+    // fast path — if the local session cache is still valid, skip to the app
     if (getSession()) {
       window.location.replace('./app.html');
       return;
     }
 
-    // initializing Firebase so it's ready when the user hits submit or the Google button
-    if (FinSiteFirebase.isConfigured()) {
-      FinSiteFirebase.initFirebase();
+    if (!FinSiteDB.isConfigured()) {
+      showError('Supabase is not configured. Add your credentials to js/config.local.js.');
+      setMode('signin');
+      bindListeners();
+      return;
+    }
+
+    const client = FinSiteDB.getClient();
+
+    // checking for an existing Supabase session — catches OAuth redirects too
+    const { data: { session } } = await client.auth.getSession();
+    if (session?.user) {
+      await _onSignedIn(session.user);
+      return;
     }
 
     setMode('signin');
+    bindListeners();
 
-    // wiring up all interactive elements here so auth.html needs no inline event handlers
+    // listening for future auth events — e.g. OAuth redirect completing after form render
+    client.auth.onAuthStateChange(async (event, session) => {
+      if (event === 'SIGNED_IN' && session?.user) {
+        await _onSignedIn(session.user);
+      }
+    });
+  }
+
+  // called once we have a confirmed Supabase user — saves profile + session then redirects
+  async function _onSignedIn(user) {
+    const provider = user.app_metadata?.provider || 'email';
+    const name     = user.user_metadata?.full_name
+                  || user.user_metadata?.name
+                  || user.email?.split('@')[0]
+                  || 'User';
+    const avatar   = user.user_metadata?.avatar_url || null;
+
+    await FinSiteDB.saveUserProfile(user.id, { name, email: user.email, avatar, provider });
+
+    saveSession({ uid: user.id, name, email: user.email, provider, avatar });
+    redirect();
+  }
+
+  function bindListeners() {
     document.getElementById('tab-signin')?.addEventListener('click', () => setMode('signin'));
     document.getElementById('tab-signup')?.addEventListener('click', () => setMode('signup'));
     document.getElementById('google-btn')?.addEventListener('click', handleGoogleClick);
@@ -141,7 +172,6 @@ const AuthApp = (() => {
       indicator.classList.add('right');
       pwInput.setAttribute('autocomplete', 'new-password');
 
-      // i retrigger the animation on the name field
       if (nameField) {
         nameField.style.animation = 'none';
         void nameField.offsetWidth;
@@ -175,7 +205,6 @@ const AuthApp = (() => {
 
     input.type = _pwVisible ? 'text' : 'password';
 
-    // i swap between the open and closed eye icon
     icon.innerHTML = _pwVisible
       ? `<path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/>
          <path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/>
@@ -194,7 +223,7 @@ const AuthApp = (() => {
     const name     = document.getElementById('input-name')?.value.trim() || '';
     const confirm  = document.getElementById('input-confirm')?.value || '';
 
-    // validating before hitting Firebase
+    // client-side validation before hitting Supabase
     if (!_isValidEmail(email)) {
       showError('Please enter a valid email address.');
       document.getElementById('input-email')?.classList.add('error');
@@ -218,109 +247,97 @@ const AuthApp = (() => {
       }
     }
 
-    if (!FinSiteFirebase.isConfigured()) {
-      showError('Firebase is not configured. Add FINSITE_FIREBASE_CONFIG to js/config.local.js.');
+    if (!FinSiteDB.isConfigured()) {
+      showError('Supabase is not configured. Add your credentials to js/config.local.js.');
       return;
     }
 
-    FinSiteFirebase.initFirebase();
-    const auth = FinSiteFirebase.getAuth();
+    const client = FinSiteDB.getClient();
     setLoading(true);
 
     try {
       if (_mode === 'signup') {
-        // creating account then saving profile to Firestore
-        const cred = await auth.createUserWithEmailAndPassword(email, password);
-        await cred.user.updateProfile({ displayName: name });
-        await FinSiteFirebase.saveUserProfile(cred.user.uid, {
-          name, email, provider: 'email', avatar: null,
+        const { data, error } = await client.auth.signUp({
+          email,
+          password,
+          options: { data: { full_name: name } },
         });
-        saveSession({ name, email, provider: 'email', avatar: null, uid: cred.user.uid });
+        if (error) throw error;
+
+        // if email confirmation is required, Supabase returns user but no session
+        if (data.user && !data.session) {
+          setLoading(false);
+          showError('Account created! Check your email to confirm before signing in.');
+          return;
+        }
+        if (data.session?.user) {
+          await _onSignedIn(data.session.user);
+        }
       } else {
-        const cred = await auth.signInWithEmailAndPassword(email, password);
-        const u = cred.user;
-        saveSession({
-          name:     u.displayName || email.split('@')[0],
-          email:    u.email,
-          provider: 'email',
-          avatar:   u.photoURL || null,
-          uid:      u.uid,
-        });
+        const { data, error } = await client.auth.signInWithPassword({ email, password });
+        if (error) throw error;
+        await _onSignedIn(data.user);
       }
-      redirect();
     } catch (err) {
-      showError(FinSiteFirebase.friendlyError(err));
+      showError(FinSiteDB.friendlyError(err));
     }
   }
 
   // ── Google OAuth ──────────────────────────────────────────────────────────
 
-  // using Firebase's built-in Google popup — no GSI script needed
+  // triggering a Supabase OAuth redirect — Google auth happens on Google's page then
+  // redirects back here, where onAuthStateChange or getSession picks it up
   async function handleGoogleClick() {
-    if (!FinSiteFirebase.isConfigured()) {
-      showError('Firebase is not configured. Add your real Firebase credentials to js/config.local.js.');
+    if (!FinSiteDB.isConfigured()) {
+      showError('Supabase is not configured. Add your credentials to js/config.local.js.');
       return;
     }
 
-    FinSiteFirebase.initFirebase();
-    const auth     = FinSiteFirebase.getAuth();
-    const provider = new firebase.auth.GoogleAuthProvider();
-    const btn      = document.getElementById('google-btn');
-
+    const btn = document.getElementById('google-btn');
     if (btn) { btn.disabled = true; btn.style.opacity = '0.7'; }
 
     try {
-      const cred = await auth.signInWithPopup(provider);
-      const u    = cred.user;
-
-      // saving/updating the Firestore profile on every Google login
-      await FinSiteFirebase.saveUserProfile(u.uid, {
-        name:     u.displayName || '',
-        email:    u.email,
-        avatar:   u.photoURL || null,
+      const client = FinSiteDB.getClient();
+      const { error } = await client.auth.signInWithOAuth({
         provider: 'google',
+        options: {
+          // i redirect back to this exact page so onAuthStateChange can finish sign-in
+          redirectTo: window.location.href,
+        },
       });
-
-      saveSession({
-        name:     u.displayName || u.email,
-        email:    u.email,
-        provider: 'google',
-        avatar:   u.photoURL || null,
-        uid:      u.uid,
-      });
-      redirect();
+      if (error) throw error;
+      // browser navigates away here — no further JS runs until redirect back
     } catch (err) {
       if (btn) { btn.disabled = false; btn.style.opacity = ''; }
-      console.error('Google sign-in error:', err.code, err.message, err);
-      if (err.code !== 'auth/popup-closed-by-user') {
-        showError(FinSiteFirebase.friendlyError(err));
-      }
+      showError(FinSiteDB.friendlyError(err));
     }
-  }
-
-  // keeping this as a no-op stub — GSI replaced by Firebase signInWithPopup above
-  function handleGoogleCallback() {
-    console.warn('handleGoogleCallback: GSI replaced by Firebase signInWithPopup — callback ignored.');
   }
 
   // ── Forgot password ───────────────────────────────────────────────────────
 
-  function handleForgot(e) {
+  async function handleForgot(e) {
     e.preventDefault();
     const email = document.getElementById('input-email')?.value.trim() || '';
     if (!email || !_isValidEmail(email)) {
       showError('Enter your email address above, then click "Forgot password?".');
       return;
     }
-      // hooking this up to Firebase password reset
-    if (!FinSiteFirebase.isConfigured()) {
-      showError('Password reset requires Firebase. Add FINSITE_FIREBASE_CONFIG to js/config.local.js.');
+
+    if (!FinSiteDB.isConfigured()) {
+      showError('Password reset requires Supabase. Add your credentials to js/config.local.js.');
       return;
     }
-    FinSiteFirebase.initFirebase();
-    FinSiteFirebase.getAuth().sendPasswordResetEmail(email)
-      .then(() => showError('Password reset email sent — check your inbox.'))
-      .catch(err => showError(FinSiteFirebase.friendlyError(err)));
+
+    try {
+      const client = FinSiteDB.getClient();
+      const { error } = await client.auth.resetPasswordForEmail(email, {
+        redirectTo: window.location.origin + '/finsite/auth.html',
+      });
+      if (error) throw error;
+      showError('Password reset email sent — check your inbox.');
+    } catch (err) {
+      showError(FinSiteDB.friendlyError(err));
+    }
   }
 
   // ── Session ───────────────────────────────────────────────────────────────
@@ -337,7 +354,8 @@ const AuthApp = (() => {
       const raw = localStorage.getItem('finsite_session');
       if (!raw) return null;
       const session = JSON.parse(raw);
-      // i expire sessions after 7 days
+      // i expire the cache after 7 days — Supabase has its own token refresh but
+      // this catches stale caches from old sessions
       const SEVEN_DAYS = 7 * 24 * 60 * 60 * 1000;
       if (Date.now() - (session.ts || 0) > SEVEN_DAYS) {
         localStorage.removeItem('finsite_session');
@@ -351,12 +369,11 @@ const AuthApp = (() => {
     window.location.replace('./app.html');
   }
 
-  // signing out of Firebase and clearing the local session cache
+  // signing out of Supabase and clearing the local session cache
   async function logout() {
     try {
-      if (FinSiteFirebase.isConfigured()) {
-        FinSiteFirebase.initFirebase();
-        await FinSiteFirebase.getAuth().signOut();
+      if (FinSiteDB.isConfigured()) {
+        await FinSiteDB.getClient().auth.signOut();
       }
     } catch (_) {}
     localStorage.removeItem('finsite_session');
@@ -370,7 +387,6 @@ const AuthApp = (() => {
     if (!el) return;
     el.textContent = msg;
     el.style.display = 'block';
-    // i retrigger the animation
     el.style.animation = 'none';
     void el.offsetWidth;
     el.style.animation = '';
@@ -407,7 +423,6 @@ const AuthApp = (() => {
     togglePassword,
     handleSubmit,
     handleGoogleClick,
-    handleGoogleCallback,
     handleForgot,
     getSession,
     logout,
@@ -415,7 +430,6 @@ const AuthApp = (() => {
 
 })();
 
-// i expose AuthApp globally so Google's GSI callback can reach it
 window.AuthApp = AuthApp;
 
 document.addEventListener('DOMContentLoaded', () => AuthApp.init());

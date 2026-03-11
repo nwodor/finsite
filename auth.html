@@ -13,12 +13,11 @@
 
   <meta http-equiv="Content-Security-Policy" content="
     default-src 'self';
-    script-src 'self' https://www.gstatic.com https://apis.google.com;
+    script-src 'self' https://cdn.jsdelivr.net https://fonts.gstatic.com;
     style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
     font-src https://fonts.gstatic.com;
-    img-src 'self' https://www.gstatic.com https://fonts.gstatic.com https://lh3.googleusercontent.com data: blob:;
-    connect-src 'self' https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://firestore.googleapis.com https://www.googleapis.com https://apis.google.com https://oauth2.googleapis.com;
-    frame-src https://finsite-1edd7.firebaseapp.com https://accounts.google.com;
+    img-src 'self' https://fonts.gstatic.com https://lh3.googleusercontent.com data: blob:;
+    connect-src 'self' https://*.supabase.co wss://*.supabase.co;
     object-src 'none';
     base-uri 'self';
   ">
@@ -161,15 +160,13 @@
     </div>
   </main>
 
-  <!-- Local Firebase config (gitignored) -->
+  <!-- Local Supabase config (gitignored) -->
   <script src="js/config.local.js"></script>
 
-  <!-- Firebase compat SDK -->
-  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+  <!-- Supabase JS client -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
-  <script src="js/firebase-init.js"></script>
+  <script src="js/supabase-init.js"></script>
   <script src="js/auth.js"></script>
 
 </body>

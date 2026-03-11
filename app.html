@@ -13,11 +13,11 @@
 
   <meta http-equiv="Content-Security-Policy" content="
     default-src 'self';
-    script-src 'self' 'unsafe-eval' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://www.gstatic.com https://cdn.tailwindcss.com;
+    script-src 'self' 'unsafe-eval' https://cdn.jsdelivr.net https://cdn.tailwindcss.com https://fonts.gstatic.com;
     style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.jsdelivr.net;
     font-src https://fonts.gstatic.com https://cdn.jsdelivr.net;
     img-src 'self' https://lh3.googleusercontent.com data: blob:;
-    connect-src 'self' https://api.anthropic.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://firestore.googleapis.com https://www.googleapis.com;
+    connect-src 'self' https://api.anthropic.com https://*.supabase.co wss://*.supabase.co;
     worker-src blob:;
     frame-ancestors 'none';
     object-src 'none';
@@ -255,11 +255,9 @@
   <!-- Auth guard: redirect to login if no session -->
   <script src="js/guard.js"></script>
 
-  <!-- Firebase compat SDK -->
-  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
-  <script src="js/firebase-init.js"></script>
+  <!-- Supabase JS client -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="js/supabase-init.js"></script>
 
   <!-- File parsing libraries -->
   <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"
