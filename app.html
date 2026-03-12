@@ -13,11 +13,11 @@
 
   <meta http-equiv="Content-Security-Policy" content="
     default-src 'self';
-    script-src 'self' 'unsafe-eval' https://cdn.jsdelivr.net https://cdn.tailwindcss.com https://fonts.gstatic.com;
+    script-src 'self' 'unsafe-eval' https://cdn.jsdelivr.net https://cdn.tailwindcss.com https://fonts.gstatic.com https://cdn.lordicon.com;
     style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.jsdelivr.net;
     font-src https://fonts.gstatic.com https://cdn.jsdelivr.net;
     img-src 'self' https://lh3.googleusercontent.com data: blob:;
-    connect-src 'self' https://api.anthropic.com https://*.supabase.co wss://*.supabase.co;
+    connect-src 'self' https://api.anthropic.com https://*.supabase.co wss://*.supabase.co https://cdn.lordicon.com;
     worker-src blob:;
     frame-ancestors 'none';
     object-src 'none';
@@ -200,7 +200,17 @@
 
           <!-- Upload zone -->
           <div class="upload-zone" id="upload-zone">
-            <div class="upload-icon">📊</div>
+            <div class="upload-icon">
+              <!-- i'm using lordicon.com for this animated chart icon — trigger="loop" keeps it alive -->
+              <!-- to swap: visit lordicon.com, find your icon, click Embed, copy the src hash -->
+              <lord-icon
+                src="https://cdn.lordicon.com/uukerzzv.json"
+                trigger="loop"
+                delay="1500"
+                colors="primary:#0da354,secondary:#bbf7d3"
+                style="width:72px;height:72px;">
+              </lord-icon>
+            </div>
             <div style="font-size:17px;font-weight:700;margin-bottom:8px;">
               Drop your bank statement here
             </div>
@@ -258,6 +268,9 @@
   <!-- Supabase JS client -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="js/supabase-init.js"></script>
+
+  <!-- Lordicon animated icons -->
+  <script src="https://cdn.lordicon.com/lordicon.js"></script>
 
   <!-- File parsing libraries -->
   <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"

@@ -5,14 +5,16 @@ const FinSiteApp = (() => {
   let _data       = null;
   let _activePage = 'dashboard';
 
+  // lottieId: paste the 8-char hash from lordicon.com → search icon → click → Embed → copy src value
+  // leave lottieId empty ('') to fall back to the Bootstrap Icon automatically
   const NAV_ITEMS = [
-    { id: 'dashboard',     icon: 'bi-grid-1x2-fill',      label: 'Dashboard'       },
-    { id: 'budget',        icon: 'bi-bar-chart-fill',      label: 'Budget'          },
-    { id: 'subscriptions', icon: 'bi-arrow-repeat',        label: 'Subscriptions'   },
-    { id: 'transactions',  icon: 'bi-credit-card-2-front', label: 'Transactions'    },
-    { id: 'advice',        icon: 'bi-lightbulb-fill',      label: 'Financial Advice'},
-    { id: 'savings',       icon: 'bi-piggy-bank-fill',     label: 'Savings'         },
-    { id: 'accounts',      icon: 'bi-wallet2',             label: 'Accounts'        },
+    { id: 'dashboard',     icon: 'bi-grid-1x2-fill',      label: 'Dashboard',        lottieId: '' },
+    { id: 'budget',        icon: 'bi-bar-chart-fill',      label: 'Budget',           lottieId: '' },
+    { id: 'subscriptions', icon: 'bi-arrow-repeat',        label: 'Subscriptions',    lottieId: '' },
+    { id: 'transactions',  icon: 'bi-credit-card-2-front', label: 'Transactions',     lottieId: '' },
+    { id: 'advice',        icon: 'bi-lightbulb-fill',      label: 'Financial Advice', lottieId: '' },
+    { id: 'savings',       icon: 'bi-piggy-bank-fill',     label: 'Savings',          lottieId: '' },
+    { id: 'accounts',      icon: 'bi-wallet2',             label: 'Accounts',         lottieId: '' },
   ];
 
   // ── formatting helpers ──────────────────────────────────────────────────────
@@ -177,13 +179,25 @@ const FinSiteApp = (() => {
     const name     = user?.name || 'FinSite User';
     const initials = name.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase() || 'FS';
 
-    const navLinks = NAV_ITEMS.map(n => `
-      <div class="nav-item${n.id === _activePage ? ' active' : ''} flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-pointer text-sm font-medium transition-all duration-150 select-none"
-           data-page="${n.id}">
-        <i class="bi ${n.icon} text-base w-5 text-center flex-shrink-0"></i>
-        <span>${n.label}</span>
-      </div>
-    `).join('');
+    const navLinks = NAV_ITEMS.map(n => {
+      const isActive = n.id === _activePage;
+      // i use lord-icon when the lottieId is set, otherwise fall back to Bootstrap Icons
+      const iconHtml = n.lottieId
+        ? `<lord-icon
+             src="https://cdn.lordicon.com/${n.lottieId}.json"
+             trigger="${isActive ? 'loop' : 'hover'}"
+             colors="primary:${isActive ? '#0da354' : '#64748b'},secondary:${isActive ? '#bbf7d3' : '#94a3b8'}"
+             style="width:20px;height:20px;flex-shrink:0;">
+           </lord-icon>`
+        : `<i class="bi ${n.icon} text-base w-5 text-center flex-shrink-0"></i>`;
+      return `
+        <div class="nav-item${isActive ? ' active' : ''} flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-pointer text-sm font-medium transition-all duration-150 select-none"
+             data-page="${n.id}">
+          ${iconHtml}
+          <span>${n.label}</span>
+        </div>
+      `;
+    }).join('');
 
     return `
       <aside class="fixed left-0 top-0 h-screen flex flex-col z-50 overflow-hidden"
